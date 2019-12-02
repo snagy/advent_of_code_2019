@@ -23,6 +23,61 @@ fn day_1() {
 
     println!("total {}", sum);
 }
+
+fn solve_d2_rep(a: usize, b:usize) -> usize {
+    let filename = "data/d2.txt";
+
+    let contents = fs::read_to_string(filename).unwrap();
+
+    let mut codes: Vec<usize> = Vec::new();
+    for v_str in contents.split(',') {
+        codes.push(v_str.trim().parse().unwrap());
+    }
+
+    //println!("{:?}", codes);
+
+    codes[1] = a;
+    codes[2] = b;
+
+
+    let mut i = 0;
+    while i < codes.len() {
+        match codes[i] as usize {
+            1 => {
+                let dest = codes[i+3];
+                codes[dest] = codes[codes[i+1]]+codes[codes[i+2]];
+            },
+            2 => {
+                let dest = codes[i+3];
+                codes[dest] = codes[codes[i+1]]*codes[codes[i+2]];
+            },
+            99 => {
+                i = codes.len();
+            },
+            _ => {
+                panic!("bad opcode!");
+            }
+        }
+        i += 4;
+    }
+
+
+    codes[0]
+}
+
+fn day_2() {
+
+    for i in 0..100 {
+        for j in 0..100 {
+            let v = solve_d2_rep(i, j);
+            if v == 19690720 {
+                println!("solved {} and {} becomes {}", i, j, i*100+j);
+                return;
+            }
+        }
+    }
+}
+
 fn main() {
-    day_1();
+    day_2();
 }
