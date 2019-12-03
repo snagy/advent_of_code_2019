@@ -78,6 +78,301 @@ fn day_2() {
     }
 }
 
+fn d3_get_bounds(codes: &Vec<Vec<(&str, i32)>>) -> ((i32,i32),(i32,i32)) {
+    let mut bounds = ((0, 0), (0, 0));
+
+    let mut pos = (0, 0);
+    for code in codes {
+        for c in code {
+            match c.0 {
+                "R" => {
+                    pos.0 += c.1;
+                    if pos.0 > (bounds.0).1 {
+                        (bounds.0).1 = pos.0;
+                    }
+                },
+                "L" => {
+                    pos.0 -= c.1; 
+                    if pos.0 < (bounds.0).0 {
+                        (bounds.0).0 = pos.0;
+                    }
+                },
+                "U" => {
+                    pos.1 += c.1;
+                    if pos.1 > (bounds.1).1 {
+                        (bounds.1).1 = pos.1;
+                    }
+                },
+                "D" => {
+                    pos.1 -= c.1;
+                    if pos.1 < (bounds.1).0 {
+                        (bounds.1).0 = pos.1;
+                    }
+                }
+                _ => {
+                    panic!("bad instruction");
+                }
+            }
+        }
+        pos = (0, 0)
+    }
+
+    println!("bounds are {:?}", bounds);
+
+    bounds
+}
+
+fn day_3() {
+    let filename = "data/d3.txt";
+
+    let contents = fs::read_to_string(filename).unwrap();
+
+    let mut codes = Vec::new();
+    
+    for code_str in contents.split_ascii_whitespace() {
+        let mut code: Vec<(&str, i32)> = Vec::new();
+        for v_str in code_str.trim().split(',') {
+            let c = v_str.split_at(1); 
+            code.push((c.0,c.1.parse().unwrap()));
+        }
+        codes.push(code);
+    }
+
+    let bounds = d3_get_bounds(&codes);
+
+    let startpos = (-(bounds.0).0, -(bounds.1).0);
+    println!("bounds are {:?} startpos {:?}", bounds, startpos);
+    let mut pos = startpos;
+    let mut nearest = std::i32::MAX;
+
+    let mut grid: Vec<Vec<bool>> = vec![vec![false; ((bounds.1).1-(bounds.1).0 + 4) as usize]; ((bounds.0).1-(bounds.0).0 + 4) as usize];
+
+    for ic in 0..codes.len() {
+        let code = &codes[ic];
+        if ic == 0 {
+            for c in code {
+                match c.0 {
+                    "R" => {
+                        for x in 1..=c.1 {
+                            grid[(pos.0+x) as usize][pos.1 as usize] = true;
+                        }
+                        pos.0 += c.1;
+                    },
+                    "L" => {
+                        for x in 1..=c.1 {
+                            grid[(pos.0-x) as usize][pos.1 as usize] = true;
+                        }
+                        pos.0 -= c.1;
+                    },
+                    "U" => {
+                        for y in 1..=c.1 {
+                            grid[pos.0 as usize][(pos.1+y) as usize] = true;
+                        }
+                        pos.1 += c.1;
+                    },
+                    "D" => {
+                        for y in 1..=c.1 {
+                            grid[pos.0 as usize][(pos.1-y) as usize] = true;
+                        }
+                        pos.1 -= c.1;
+                    }
+                    _ => {
+                        panic!("bad instruction");
+                    }
+                }
+            }
+        } else {
+            for c in code {
+                match c.0 {
+                    "R" => {
+                        for x in 1..=c.1 {
+                            if grid[(pos.0+x) as usize][pos.1 as usize] {
+                                println!("Found intersection! {} {}", pos.0+x, pos.1);
+                                let len = (startpos.0 - (pos.0+x)).abs()+(startpos.1 - pos.1).abs();
+                                if len < nearest {
+                                    nearest = len;
+                                }
+                            }
+                        }
+                        pos.0 += c.1;
+                    },
+                    "L" => {
+                        for x in 1..=c.1 {
+                            if grid[(pos.0-x) as usize][pos.1 as usize] {
+                                println!("Found intersection! {} {}", pos.0-x, pos.1);
+                                let len = (startpos.0 - (pos.0-x)).abs()+(startpos.1 - pos.1).abs();
+                                if len < nearest {
+                                    nearest = len;
+                                }
+                            }
+                        }
+                        pos.0 -= c.1;
+                    },
+                    "U" => {
+                        for y in 1..=c.1 {
+                            if grid[pos.0 as usize][(pos.1+y) as usize] {
+                                println!("Found intersection! {} {}", pos.0, pos.1+y);
+                                let len = (startpos.0 - (pos.0)).abs()+(startpos.1 - (pos.1+y)).abs();
+                                if len < nearest {
+                                    nearest = len;
+                                }
+                            }
+                        }
+                        pos.1 += c.1;
+                    },
+                    "D" => {
+                        for y in 1..=c.1 {
+                            if grid[pos.0 as usize][(pos.1-y) as usize] {
+                                println!("Found intersection! {} {}", pos.0, pos.1-y);
+                                let len = (startpos.0 - (pos.0)).abs()+(startpos.1 - (pos.1-y)).abs();
+                                if len < nearest {
+                                    nearest = len;
+                                }
+                            }
+                        }
+                        pos.1 -= c.1;
+                    }
+                    _ => {
+                        panic!("bad instruction");
+                    }
+                }
+            }
+        }
+        pos = startpos;
+    }
+
+    println!("len is {}", nearest);
+}
+
+
+fn day_3_b() {
+    let filename = "data/d3.txt";
+
+    let contents = fs::read_to_string(filename).unwrap();
+
+    let mut codes = Vec::new();
+    
+    for code_str in contents.split_ascii_whitespace() {
+        let mut code: Vec<(&str, i32)> = Vec::new();
+        for v_str in code_str.trim().split(',') {
+            let c = v_str.split_at(1); 
+            code.push((c.0,c.1.parse().unwrap()));
+        }
+        codes.push(code);
+    }
+
+    let bounds = d3_get_bounds(&codes);
+
+    let startpos = (-(bounds.0).0, -(bounds.1).0);
+    println!("bounds are {:?} startpos {:?}", bounds, startpos);
+
+    let mut pos = startpos;
+    let mut nearest = std::i32::MAX;
+    let mut grid: Vec<Vec<i32>> = vec![vec![std::i32::MAX / 2; ((bounds.1).1-(bounds.1).0 + 4) as usize]; ((bounds.0).1-(bounds.0).0 + 4) as usize];
+
+    for ic in 0..codes.len() {
+        let code = &codes[ic];
+        let mut nsteps = 0;
+        if ic == 0 {
+            for c in code {
+                match c.0 {
+                    "R" => {
+                        for x in 1..=c.1 {
+                            nsteps+=1;
+                            if grid[(pos.0+x) as usize][pos.1 as usize] > nsteps {
+                                grid[(pos.0+x) as usize][pos.1 as usize] = nsteps;
+                            }
+                        }
+                        pos.0 += c.1;
+                    },
+                    "L" => {
+                        for x in 1..=c.1 {
+                            nsteps+=1;
+                            if grid[(pos.0-x) as usize][pos.1 as usize] > nsteps {
+                                grid[(pos.0-x) as usize][pos.1 as usize] = nsteps;
+                            }
+                        }
+                        pos.0 -= c.1;
+                    },
+                    "U" => {
+                        for y in 1..=c.1 {
+                            nsteps += 1;
+                            if grid[pos.0 as usize][(pos.1+y) as usize] > nsteps {
+                                grid[pos.0 as usize][(pos.1+y) as usize] = nsteps;
+                            }
+                        }
+                        pos.1 += c.1;
+                    },
+                    "D" => {
+                        for y in 1..=c.1 {
+                            nsteps += 1;
+                            if grid[pos.0 as usize][(pos.1-y) as usize] > nsteps {
+                                grid[pos.0 as usize][(pos.1-y) as usize] = nsteps;
+                            }
+                        }
+                        pos.1 -= c.1;
+                    }
+                    _ => {
+                        panic!("bad instruction");
+                    }
+                }
+            }
+        } else {
+            for c in code {
+                match c.0 {
+                    "R" => {
+                        for x in 1..=c.1 {
+                            nsteps += 1;
+                            if grid[(pos.0+x) as usize][pos.1 as usize] + nsteps < nearest {
+                                println!("Found intersection! {} {}", pos.0+x, pos.1);
+                                nearest = grid[(pos.0+x) as usize][pos.1 as usize] + nsteps;
+                            }
+                        }
+                        pos.0 += c.1;
+                    },
+                    "L" => {
+                        for x in 1..=c.1 {
+                            nsteps += 1;
+                            if grid[(pos.0-x) as usize][pos.1 as usize] + nsteps < nearest {
+                                println!("Found intersection! {} {}", pos.0-x, pos.1);
+                                nearest = grid[(pos.0-x) as usize][pos.1 as usize] + nsteps;
+                            }
+                        }
+                        pos.0 -= c.1;
+                    },
+                    "U" => {
+                        for y in 1..=c.1 {
+                            nsteps += 1;
+                            if grid[pos.0 as usize][(pos.1+y) as usize] + nsteps < nearest {
+                                println!("Found intersection! {} {}", pos.0, pos.1+y);
+                                nearest = grid[pos.0 as usize][(pos.1+y) as usize] + nsteps;
+                            }
+                        }
+                        pos.1 += c.1;
+                    },
+                    "D" => {
+                        for y in 1..=c.1 {
+                            nsteps += 1;
+                            if grid[pos.0 as usize][(pos.1-y) as usize] + nsteps < nearest {
+                                println!("Found intersection! {} {}", pos.0, pos.1-y);
+                                nearest = grid[pos.0 as usize][(pos.1-y) as usize] + nsteps;
+                            }
+                        }
+                        pos.1 -= c.1;
+                    }
+                    _ => {
+                        panic!("bad instruction");
+                    }
+                }
+            }
+        }
+        pos = startpos;
+    }
+
+    println!("len is {}", nearest);
+}
+
+
 fn main() {
-    day_2();
+    day_3();
 }
