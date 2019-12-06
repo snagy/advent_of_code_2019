@@ -1,4 +1,5 @@
 use std::fs;
+use std::collections::HashMap;
 
 // fn day_1() {
 //     let filename = "data/d1.txt";
@@ -415,117 +416,203 @@ fn solve_d2_rep(a: usize, b:usize) -> usize {
 //     println!("sum is {}", sum);
 // }
 
-fn day_5() {
-    let filename = "data/d4.txt";
+// fn day_5() {
+//     let filename = "data/d4.txt";
+
+//     let contents = fs::read_to_string(filename).unwrap();
+
+//     let mut codes: Vec<i32> = Vec::new();
+//     for v_str in contents.split(',') {
+//         codes.push(v_str.trim().parse().unwrap());
+//     }
+
+//     //println!("{:?}", codes);
+
+//     // codes[1] = a;
+//     // codes[2] = b;
+
+//     let instr_size = {
+//         let mut v = vec![4;100];
+//         v[3] = 2;
+//         v[4] = 2;
+//         v[5] = 3;
+//         v[6] = 3;
+//         v[99] = 1;
+//         v };
+
+//     let input = 5;
+//     let mut output = 0;
+
+//     let mut i = 0;
+//     while i < codes.len() {
+//         let instr = codes[i];
+//         let opcode = instr % 100;
+//         let mut params = Vec::new();
+//         let mut div = 100;
+
+//         for j in 1..instr_size[opcode as usize] {
+//             params.push(if ((instr / div) % 10) != 0 { i+j } else {codes[i+j] as usize});
+//             div = div * 10;
+//         }
+
+//         println!("instr {} is opcode {} with params {:?}", instr, opcode, params);
+//         //println!("vals are {} {} {}", codes[p0], codes[p1], codes[p2] );
+//         match opcode as usize {
+//             1 => {
+//                 codes[params[2]] = codes[params[0]]+codes[params[1]];
+//                 i += 4;
+//             },
+//             2 => {
+//                 codes[params[2]] = codes[params[0]]*codes[params[1]];
+//                 i += 4;
+//             },
+//             3 => {
+//                 // put input at addr params[0];
+//                 codes[params[0]] = input;
+//                 i += 2;
+//             },
+//             4 => {
+//                 // output at params[0]
+//                 output = codes[params[0]];
+//                 i += 2;
+//             },
+//             5 => {
+//                 // jump if true
+//                 if codes[params[0]] != 0 {
+//                     i = codes[params[1]] as usize;
+//                 }
+//                 else {
+//                     i += 3;
+//                 }
+//             }
+//             6 => {
+//                 // jump if false
+//                 if codes[params[0]] == 0 {
+//                     i = codes[params[1]] as usize;
+//                 }
+//                 else {
+//                     i += 3;
+//                 }
+//             },
+//             7 => {
+//                 // less than
+//                 if codes[params[0]] < codes[params[1]] {
+//                     codes[params[2]] = 1;
+//                 }
+//                 else {
+//                     codes[params[2]] = 0;
+//                 }
+//                 i += 4;
+//             },
+//             8 => {
+//                 // equal
+//                 if codes[params[0]] == codes[params[1]] {
+//                     codes[params[2]] = 1;
+//                 }
+//                 else {
+//                     codes[params[2]] = 0;
+//                 }
+//                 i += 4;
+//             },
+//             99 => {
+//                 i = codes.len();
+//             },
+//             _ => {
+//                 panic!("bad opcode!");
+//             }
+//         }
+//     }
+
+//     println!("output {}", output);
+// //    codes[0]
+// }
+
+
+fn visit(c: &str, d: i32, hm:&HashMap<&str, Vec<&str>>) -> i32 {
+    let mut ct = d;
+    let kids = 
+    match hm.get(c) {
+        Some(kids) => {
+            for k in kids {
+                ct += visit(k,d+1,hm);
+            }
+        },
+        None => {}
+    };
+    return ct
+}
+
+fn day_6() {
+    let filename = "data/d6.txt";
 
     let contents = fs::read_to_string(filename).unwrap();
 
-    let mut codes: Vec<i32> = Vec::new();
-    for v_str in contents.split(',') {
-        codes.push(v_str.trim().parse().unwrap());
-    }
-
-    //println!("{:?}", codes);
-
-    // codes[1] = a;
-    // codes[2] = b;
-
-    let instr_size = {
-        let mut v = vec![4;100];
-        v[3] = 2;
-        v[4] = 2;
-        v[5] = 3;
-        v[6] = 3;
-        v[99] = 1;
-        v };
-
-    let input = 5;
-    let mut output = 0;
-
-    let mut i = 0;
-    while i < codes.len() {
-        let instr = codes[i];
-        let opcode = instr % 100;
-        let mut params = Vec::new();
-        let mut div = 100;
-
-        for j in 1..instr_size[opcode as usize] {
-            params.push(if ((instr / div) % 10) != 0 { i+j } else {codes[i+j] as usize});
-            div = div * 10;
-        }
-
-        println!("instr {} is opcode {} with params {:?}", instr, opcode, params);
-        //println!("vals are {} {} {}", codes[p0], codes[p1], codes[p2] );
-        match opcode as usize {
-            1 => {
-                codes[params[2]] = codes[params[0]]+codes[params[1]];
-                i += 4;
+    let mut p_to_cs: HashMap<&str, Vec<&str>> = HashMap::new();
+    let mut c_to_p: HashMap<&str, &str> = HashMap::new();
+    for v_str in contents.split_ascii_whitespace() {
+        let pstrs: Vec<_> = v_str.trim().split(")").collect();
+        
+        c_to_p.insert(pstrs[1], pstrs[0]);
+        match p_to_cs.get_mut(&pstrs[0]) {
+            Some(children) => {
+                children.push(pstrs[1]);
             },
-            2 => {
-                codes[params[2]] = codes[params[0]]*codes[params[1]];
-                i += 4;
-            },
-            3 => {
-                // put input at addr params[0];
-                codes[params[0]] = input;
-                i += 2;
-            },
-            4 => {
-                // output at params[0]
-                output = codes[params[0]];
-                i += 2;
-            },
-            5 => {
-                // jump if true
-                if codes[params[0]] != 0 {
-                    i = codes[params[1]] as usize;
-                }
-                else {
-                    i += 3;
-                }
-            }
-            6 => {
-                // jump if false
-                if codes[params[0]] == 0 {
-                    i = codes[params[1]] as usize;
-                }
-                else {
-                    i += 3;
-                }
-            },
-            7 => {
-                // less than
-                if codes[params[0]] < codes[params[1]] {
-                    codes[params[2]] = 1;
-                }
-                else {
-                    codes[params[2]] = 0;
-                }
-                i += 4;
-            },
-            8 => {
-                // equal
-                if codes[params[0]] == codes[params[1]] {
-                    codes[params[2]] = 1;
-                }
-                else {
-                    codes[params[2]] = 0;
-                }
-                i += 4;
-            },
-            99 => {
-                i = codes.len();
-            },
-            _ => {
-                panic!("bad opcode!");
+            None => {
+                p_to_cs.insert(pstrs[0], vec![pstrs[1]]);
             }
         }
     }
 
-    println!("output {}", output);
-//    codes[0]
+
+    let top = {
+        let mut t = "COM";
+
+        while c_to_p.get(t).is_some() {
+            t = c_to_p.get(t).unwrap();
+        }
+        t
+    };
+
+    let mut count = 0;
+    println!("lol visit {}", visit(top, 0, &p_to_cs));
+
+    let dist = {
+        let mut s = "SAN";
+        let mut ps = Vec::new();
+        while c_to_p.get(s).is_some() {
+            s = c_to_p.get(s).unwrap();
+            ps.push(s);
+        }
+
+        let mut count_down = 0;
+        let mut y = "YOU";
+        while c_to_p.get(y).is_some() {
+            y = c_to_p.get(y).unwrap();
+            if ps.contains(&y) {
+                break;
+            }
+            count_down += 1;
+        }
+
+        let mut s = "SAN";
+        while c_to_p.get(s).is_some() {
+            s = c_to_p.get(s).unwrap();
+            if y == s {
+                break;
+            }
+            count_down += 1;
+        }
+        
+        count_down
+    };
+
+
+
+    println!("dist: {}", dist);
+
+    //println!("top {} list {:?}", top, p_to_cs);
 }
 
 fn main() {
-    day_5();
+    day_6();
 }
