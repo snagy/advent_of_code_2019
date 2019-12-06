@@ -23,46 +23,46 @@ use std::fs;
 //     println!("total {}", sum);
 // }
 
-// fn solve_d2_rep(a: usize, b:usize) -> usize {
-//     let filename = "data/d2.txt";
+fn solve_d2_rep(a: usize, b:usize) -> usize {
+    let filename = "data/d2.txt";
 
-//     let contents = fs::read_to_string(filename).unwrap();
+    let contents = fs::read_to_string(filename).unwrap();
 
-//     let mut codes: Vec<usize> = Vec::new();
-//     for v_str in contents.split(',') {
-//         codes.push(v_str.trim().parse().unwrap());
-//     }
+    let mut codes: Vec<usize> = Vec::new();
+    for v_str in contents.split(',') {
+        codes.push(v_str.trim().parse().unwrap());
+    }
 
-//     //println!("{:?}", codes);
+    //println!("{:?}", codes);
 
-//     codes[1] = a;
-//     codes[2] = b;
-
-
-//     let mut i = 0;
-//     while i < codes.len() {
-//         match codes[i] as usize {
-//             1 => {
-//                 let dest = codes[i+3];
-//                 codes[dest] = codes[codes[i+1]]+codes[codes[i+2]];
-//             },
-//             2 => {
-//                 let dest = codes[i+3];
-//                 codes[dest] = codes[codes[i+1]]*codes[codes[i+2]];
-//             },
-//             99 => {
-//                 i = codes.len();
-//             },
-//             _ => {
-//                 panic!("bad opcode!");
-//             }
-//         }
-//         i += 4;
-//     }
+    codes[1] = a;
+    codes[2] = b;
 
 
-//     codes[0]
-// }
+    let mut i = 0;
+    while i < codes.len() {
+        match codes[i] as usize {
+            1 => {
+                let dest = codes[i+3];
+                codes[dest] = codes[codes[i+1]]+codes[codes[i+2]];
+            },
+            2 => {
+                let dest = codes[i+3];
+                codes[dest] = codes[codes[i+1]]*codes[codes[i+2]];
+            },
+            99 => {
+                i = codes.len();
+            },
+            _ => {
+                panic!("bad opcode!");
+            }
+        }
+        i += 4;
+    }
+
+
+    codes[0]
+}
 
 // fn day_2() {
 
@@ -372,49 +372,160 @@ use std::fs;
 // }
 
 
-fn check_pass(pi: i32) -> bool {
-    let mut p = pi;
-    let mut pd = 10;
-    let mut n_match = 0;
-    let mut has_double = false;
-    for i in 0..6 {
-        let d = p % 10;
-        if d > pd {
-            return false;
+// fn check_pass(pi: i32) -> bool {
+//     let mut p = pi;
+//     let mut pd = 10;
+//     let mut n_match = 0;
+//     let mut has_double = false;
+//     for i in 0..6 {
+//         let d = p % 10;
+//         if d > pd {
+//             return false;
+//         }
+//         else if d == pd {
+//             n_match += 1;
+//         }
+//         else {
+//             if n_match == 1 {
+//                 has_double = true;
+//             }
+//             n_match = 0;
+//             pd = d;
+//         }
+//         p /= 10;
+//     }
+//     return n_match == 1 || has_double;
+// }
+
+// fn day_4() {
+//     let mut sum = 0;
+//     for i in 134564..=585159 {
+//         if check_pass(i) {
+//             sum += 1;
+//         }
+//     }
+//     println!("test 1 111111 is {}", check_pass(111111));
+//     println!("test 2 223450 is {}", check_pass(223450));
+//     println!("test 3 123789 is {}", check_pass(123789));
+//     println!("test 3 335577 is {}", check_pass(335577));
+
+//     println!("test 3 111122 is {}", check_pass(111122));
+//     println!("test 3 112222 is {}", check_pass(112222));
+
+//     println!("sum is {}", sum);
+// }
+
+fn day_5() {
+    let filename = "data/d4.txt";
+
+    let contents = fs::read_to_string(filename).unwrap();
+
+    let mut codes: Vec<i32> = Vec::new();
+    for v_str in contents.split(',') {
+        codes.push(v_str.trim().parse().unwrap());
+    }
+
+    //println!("{:?}", codes);
+
+    // codes[1] = a;
+    // codes[2] = b;
+
+    let instr_size = {
+        let mut v = vec![4;100];
+        v[3] = 2;
+        v[4] = 2;
+        v[5] = 3;
+        v[6] = 3;
+        v[99] = 1;
+        v };
+
+    let input = 5;
+    let mut output = 0;
+
+    let mut i = 0;
+    while i < codes.len() {
+        let instr = codes[i];
+        let opcode = instr % 100;
+        let mut params = Vec::new();
+        let mut div = 100;
+
+        for j in 1..instr_size[opcode as usize] {
+            params.push(if ((instr / div) % 10) != 0 { i+j } else {codes[i+j] as usize});
+            div = div * 10;
         }
-        else if d == pd {
-            n_match += 1;
-        }
-        else {
-            if n_match == 1 {
-                has_double = true;
+
+        println!("instr {} is opcode {} with params {:?}", instr, opcode, params);
+        //println!("vals are {} {} {}", codes[p0], codes[p1], codes[p2] );
+        match opcode as usize {
+            1 => {
+                codes[params[2]] = codes[params[0]]+codes[params[1]];
+                i += 4;
+            },
+            2 => {
+                codes[params[2]] = codes[params[0]]*codes[params[1]];
+                i += 4;
+            },
+            3 => {
+                // put input at addr params[0];
+                codes[params[0]] = input;
+                i += 2;
+            },
+            4 => {
+                // output at params[0]
+                output = codes[params[0]];
+                i += 2;
+            },
+            5 => {
+                // jump if true
+                if codes[params[0]] != 0 {
+                    i = codes[params[1]] as usize;
+                }
+                else {
+                    i += 3;
+                }
             }
-            n_match = 0;
-            pd = d;
+            6 => {
+                // jump if false
+                if codes[params[0]] == 0 {
+                    i = codes[params[1]] as usize;
+                }
+                else {
+                    i += 3;
+                }
+            },
+            7 => {
+                // less than
+                if codes[params[0]] < codes[params[1]] {
+                    codes[params[2]] = 1;
+                }
+                else {
+                    codes[params[2]] = 0;
+                }
+                i += 4;
+            },
+            8 => {
+                // equal
+                if codes[params[0]] == codes[params[1]] {
+                    codes[params[2]] = 1;
+                }
+                else {
+                    codes[params[2]] = 0;
+                }
+                i += 4;
+            },
+            99 => {
+                i = codes.len();
+            },
+            _ => {
+                panic!("bad opcode!");
+            }
         }
-        p /= 10;
     }
-    return n_match == 1 || has_double;
-}
 
-fn day_4() {
-    let mut sum = 0;
-    for i in 134564..=585159 {
-        if check_pass(i) {
-            sum += 1;
-        }
-    }
-    println!("test 1 111111 is {}", check_pass(111111));
-    println!("test 2 223450 is {}", check_pass(223450));
-    println!("test 3 123789 is {}", check_pass(123789));
-    println!("test 3 335577 is {}", check_pass(335577));
-
-    println!("test 3 111122 is {}", check_pass(111122));
-    println!("test 3 112222 is {}", check_pass(112222));
-
-    println!("sum is {}", sum);
+    println!("output {}", output);
+//    codes[0]
 }
 
 fn main() {
-    day_4();
+    day_5();
 }
