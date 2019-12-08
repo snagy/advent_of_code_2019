@@ -528,91 +528,238 @@ fn solve_d2_rep(a: usize, b:usize) -> usize {
 // }
 
 
-fn visit(c: &str, d: i32, hm:&HashMap<&str, Vec<&str>>) -> i32 {
-    let mut ct = d;
-    let kids = 
-    match hm.get(c) {
-        Some(kids) => {
-            for k in kids {
-                ct += visit(k,d+1,hm);
-            }
-        },
-        None => {}
-    };
-    return ct
-}
+// fn visit(c: &str, d: i32, hm:&HashMap<&str, Vec<&str>>) -> i32 {
+//     let mut ct = d;
+//     let kids = 
+//     match hm.get(c) {
+//         Some(kids) => {
+//             for k in kids {
+//                 ct += visit(k,d+1,hm);
+//             }
+//         },
+//         None => {}
+//     };
+//     return ct
+// }
 
-fn day_6() {
-    let filename = "data/d6.txt";
+// fn day_6() {
+//     let filename = "data/d6.txt";
+
+//     let contents = fs::read_to_string(filename).unwrap();
+
+//     let mut p_to_cs: HashMap<&str, Vec<&str>> = HashMap::new();
+//     let mut c_to_p: HashMap<&str, &str> = HashMap::new();
+//     for v_str in contents.split_ascii_whitespace() {
+//         let pstrs: Vec<_> = v_str.trim().split(")").collect();
+        
+//         c_to_p.insert(pstrs[1], pstrs[0]);
+//         match p_to_cs.get_mut(&pstrs[0]) {
+//             Some(children) => {
+//                 children.push(pstrs[1]);
+//             },
+//             None => {
+//                 p_to_cs.insert(pstrs[0], vec![pstrs[1]]);
+//             }
+//         }
+//     }
+
+
+//     let top = {
+//         let mut t = "COM";
+
+//         while c_to_p.get(t).is_some() {
+//             t = c_to_p.get(t).unwrap();
+//         }
+//         t
+//     };
+
+//     let mut count = 0;
+//     println!("lol visit {}", visit(top, 0, &p_to_cs));
+
+//     let dist = {
+//         let mut s = "SAN";
+//         let mut ps = Vec::new();
+//         while c_to_p.get(s).is_some() {
+//             s = c_to_p.get(s).unwrap();
+//             ps.push(s);
+//         }
+
+//         let mut count_down = 0;
+//         let mut y = "YOU";
+//         while c_to_p.get(y).is_some() {
+//             y = c_to_p.get(y).unwrap();
+//             if ps.contains(&y) {
+//                 break;
+//             }
+//             count_down += 1;
+//         }
+
+//         let mut s = "SAN";
+//         while c_to_p.get(s).is_some() {
+//             s = c_to_p.get(s).unwrap();
+//             if y == s {
+//                 break;
+//             }
+//             count_down += 1;
+//         }
+        
+//         count_down
+//     };
+
+//     println!("dist: {}", dist);
+
+//     //println!("top {} list {:?}", top, p_to_cs);
+// }
+
+
+fn d7_load_codes() -> Vec<i32> {
+    let filename = "data/d7.txt";
 
     let contents = fs::read_to_string(filename).unwrap();
 
-    let mut p_to_cs: HashMap<&str, Vec<&str>> = HashMap::new();
-    let mut c_to_p: HashMap<&str, &str> = HashMap::new();
-    for v_str in contents.split_ascii_whitespace() {
-        let pstrs: Vec<_> = v_str.trim().split(")").collect();
-        
-        c_to_p.insert(pstrs[1], pstrs[0]);
-        match p_to_cs.get_mut(&pstrs[0]) {
-            Some(children) => {
-                children.push(pstrs[1]);
+    let mut codes: Vec<i32> = Vec::new();
+    for v_str in contents.split(',') {
+        codes.push(v_str.trim().parse().unwrap());
+    }
+
+    codes
+}
+
+fn day_7_check(inputs: &Vec<i32>, codes: &mut Vec<i32>, i: &mut usize) -> (i32, bool) {
+    let instr_size = {
+        let mut v = vec![4;100];
+        v[3] = 2;
+        v[4] = 2;
+        v[5] = 3;
+        v[6] = 3;
+        v[99] = 1;
+        v };
+
+    let mut input_idx = 0;
+    let mut output = inputs[inputs.len() - 1];
+
+    while *i < codes.len() {
+        let instr = codes[*i];
+        let opcode = instr % 100;
+        let mut params = Vec::new();
+        let mut div = 100;
+
+        for j in 1..instr_size[opcode as usize] {
+            params.push(if ((instr / div) % 10) != 0 { *i+j } else {codes[*i+j] as usize});
+            div = div * 10;
+        }
+
+        //println!("instr {} is opcode {} with params {:?}", instr, opcode, params);
+        //println!("vals are {} {} {}", codes[p0], codes[p1], codes[p2] );
+        match opcode as usize {
+            1 => {
+                codes[params[2]] = codes[params[0]]+codes[params[1]];
+                *i += 4;
             },
-            None => {
-                p_to_cs.insert(pstrs[0], vec![pstrs[1]]);
+            2 => {
+                codes[params[2]] = codes[params[0]]*codes[params[1]];
+                *i += 4;
+            },
+            3 => {
+                // put input at addr params[0];
+                codes[params[0]] = if inputs.len() > input_idx {inputs[input_idx]} else { output };
+                input_idx += 1;
+                *i += 2;
+            },
+            4 => {
+                // output at params[0]
+                //output = codes[params[0]];
+                *i += 2;
+                return (codes[params[0]], false)
+            },
+            5 => {
+                // jump if true
+                if codes[params[0]] != 0 {
+                    *i = codes[params[1]] as usize;
+                }
+                else {
+                    *i += 3;
+                }
+            }
+            6 => {
+                // jump if false
+                if codes[params[0]] == 0 {
+                    *i = codes[params[1]] as usize;
+                }
+                else {
+                    *i += 3;
+                }
+            },
+            7 => {
+                // less than
+                if codes[params[0]] < codes[params[1]] {
+                    codes[params[2]] = 1;
+                }
+                else {
+                    codes[params[2]] = 0;
+                }
+                *i += 4;
+            },
+            8 => {
+                // equal
+                if codes[params[0]] == codes[params[1]] {
+                    codes[params[2]] = 1;
+                }
+                else {
+                    codes[params[2]] = 0;
+                }
+                *i += 4;
+            },
+            99 => {
+                *i = codes.len();
+            },
+            _ => {
+                panic!("bad opcode!");
             }
         }
     }
 
-
-    let top = {
-        let mut t = "COM";
-
-        while c_to_p.get(t).is_some() {
-            t = c_to_p.get(t).unwrap();
-        }
-        t
-    };
-
-    let mut count = 0;
-    println!("lol visit {}", visit(top, 0, &p_to_cs));
-
-    let dist = {
-        let mut s = "SAN";
-        let mut ps = Vec::new();
-        while c_to_p.get(s).is_some() {
-            s = c_to_p.get(s).unwrap();
-            ps.push(s);
-        }
-
-        let mut count_down = 0;
-        let mut y = "YOU";
-        while c_to_p.get(y).is_some() {
-            y = c_to_p.get(y).unwrap();
-            if ps.contains(&y) {
-                break;
-            }
-            count_down += 1;
-        }
-
-        let mut s = "SAN";
-        while c_to_p.get(s).is_some() {
-            s = c_to_p.get(s).unwrap();
-            if y == s {
-                break;
-            }
-            count_down += 1;
-        }
-        
-        count_down
-    };
-
-
-
-    println!("dist: {}", dist);
-
-    //println!("top {} list {:?}", top, p_to_cs);
+    return (output,true);
 }
 
+
 fn main() {
-    day_6();
+    let mut max = 0;
+    for i0 in 0..5 {
+        for i1 in 0..5 {
+            if i1 != i0 {
+            for i2 in 0..5 {
+                if i2 != i0 && i2 != i1 {
+                for i3 in 0..5 {
+                    if i3 != i2 && i3 != i1 && i3 != i0 {
+                        for i4 in 0..5 {
+                            if i4 != i3 && i4 != i2 && i4 != i1 && i4 != i0 {
+                                let mut codes = vec![d7_load_codes(); 5];
+                                let mut instr_ptr: Vec<usize> = vec![0; 5];
+                                let mut prev = (0, false);
+                                let order = vec![i0+5,i1+5,i2+5,i3+5,i4+5];
+                                let mut kickoff = 0;
+                                while prev.1 == false {
+                                    for i in 0..5 {
+                                        let args = if kickoff < 5 {vec![order[i],prev.0]} else {vec![prev.0]};
+                                        prev = day_7_check(&args, &mut codes[i], &mut instr_ptr[i]);
+                                        println!("output {} halt {}", prev.0, prev.1);
+                                        kickoff+=1;
+                                    }
+                                }
+                            
+                                println!("order {:?} answer: {}", &order, prev.0);
+                                if prev.0 > max {
+                                    max = prev.0;
+                                }
+                            }
+                        }
+                    }
+                }
+                }
+            }
+            }
+        }
+    }
+    println!("answer: {}", max);
 }
