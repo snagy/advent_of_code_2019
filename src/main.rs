@@ -24,46 +24,46 @@ use std::collections::HashMap;
 //     println!("total {}", sum);
 // }
 
-fn solve_d2_rep(a: usize, b:usize) -> usize {
-    let filename = "data/d2.txt";
+// fn solve_d2_rep(a: usize, b:usize) -> usize {
+//     let filename = "data/d2.txt";
 
-    let contents = fs::read_to_string(filename).unwrap();
+//     let contents = fs::read_to_string(filename).unwrap();
 
-    let mut codes: Vec<usize> = Vec::new();
-    for v_str in contents.split(',') {
-        codes.push(v_str.trim().parse().unwrap());
-    }
+//     let mut codes: Vec<usize> = Vec::new();
+//     for v_str in contents.split(',') {
+//         codes.push(v_str.trim().parse().unwrap());
+//     }
 
-    //println!("{:?}", codes);
+//     //println!("{:?}", codes);
 
-    codes[1] = a;
-    codes[2] = b;
-
-
-    let mut i = 0;
-    while i < codes.len() {
-        match codes[i] as usize {
-            1 => {
-                let dest = codes[i+3];
-                codes[dest] = codes[codes[i+1]]+codes[codes[i+2]];
-            },
-            2 => {
-                let dest = codes[i+3];
-                codes[dest] = codes[codes[i+1]]*codes[codes[i+2]];
-            },
-            99 => {
-                i = codes.len();
-            },
-            _ => {
-                panic!("bad opcode!");
-            }
-        }
-        i += 4;
-    }
+//     codes[1] = a;
+//     codes[2] = b;
 
 
-    codes[0]
-}
+//     let mut i = 0;
+//     while i < codes.len() {
+//         match codes[i] as usize {
+//             1 => {
+//                 let dest = codes[i+3];
+//                 codes[dest] = codes[codes[i+1]]+codes[codes[i+2]];
+//             },
+//             2 => {
+//                 let dest = codes[i+3];
+//                 codes[dest] = codes[codes[i+1]]*codes[codes[i+2]];
+//             },
+//             99 => {
+//                 i = codes.len();
+//             },
+//             _ => {
+//                 panic!("bad opcode!");
+//             }
+//         }
+//         i += 4;
+//     }
+
+
+//     codes[0]
+// }
 
 // fn day_2() {
 
@@ -764,68 +764,213 @@ fn solve_d2_rep(a: usize, b:usize) -> usize {
 //     println!("answer: {}", max);
 // }
 
-fn day_8_a() {
-    let filename = "data/d8.txt";
+// fn day_8_a() {
+//     let filename = "data/d8.txt";
+
+//     let contents = fs::read_to_string(filename).unwrap();
+
+//     let mut layers = Vec::new();
+//     let mut finallayer = vec![2; 25*6];
+//     let mut layer = Vec::new();
+//     let mut layerinfo = (0, 0, 0);
+//     let mut bestlayerinfo = (10000,0,0);
+//     for c in contents.chars() {
+//         if c.is_digit(10) {
+//             let d = c.to_digit(10).unwrap();
+//             layer.push(d);
+//             match d {
+//                 0 => layerinfo.0 += 1,
+//                 1 => layerinfo.1 += 1,
+//                 2 => layerinfo.2 += 1,
+//                 _ => {}
+//             }
+//             if layer.len() == (25 * 6) {
+//                 println!("layer info {:?}", layerinfo);
+//                 if layerinfo.0 < bestlayerinfo.0 {
+//                     bestlayerinfo = layerinfo;
+//                     println!("new best {:?}", layer);
+//                 }
+//                 layers.push(layer);
+//                 layer = Vec::new();
+//                 layerinfo = (0,0,0);
+//             }
+//         }
+//     }
+
+//     println!("best is {:?} val  {}", bestlayerinfo, bestlayerinfo.1 * bestlayerinfo.2);
+// }
+
+// fn day_8_b() {
+//     let filename = "data/d8.txt";
+
+//     let contents = fs::read_to_string(filename).unwrap();
+
+//     let mut layers = Vec::new();
+//     let mut finallayer = vec![2; 25*6];
+//     let mut layer = Vec::new();
+//     for c in contents.chars() {
+//         if c.is_digit(10) {
+//             let d = c.to_digit(10).unwrap();
+//             if finallayer[layer.len()] == 2 { finallayer[layer.len()] = d; }
+//             layer.push(d);
+
+//             if layer.len() == (25 * 6) {
+//                 layers.push(layer);
+//                 layer = Vec::new();
+//             }
+//         }
+//     }
+
+//     for i in 0..6 {
+//         println!("{:?}", finallayer.get((i*25+0)..(i*25+25)));
+//     }
+// }
+
+
+fn day_9_load_codes() -> HashMap<i64,i64> {
+    let filename = "data/d9.txt";
 
     let contents = fs::read_to_string(filename).unwrap();
 
-    let mut layers = Vec::new();
-    let mut finallayer = vec![2; 25*6];
-    let mut layer = Vec::new();
-    let mut layerinfo = (0, 0, 0);
-    let mut bestlayerinfo = (10000,0,0);
-    for c in contents.chars() {
-        if c.is_digit(10) {
-            let d = c.to_digit(10).unwrap();
-            layer.push(d);
-            match d {
-                0 => layerinfo.0 += 1,
-                1 => layerinfo.1 += 1,
-                2 => layerinfo.2 += 1,
-                _ => {}
-            }
-            if layer.len() == (25 * 6) {
-                println!("layer info {:?}", layerinfo);
-                if layerinfo.0 < bestlayerinfo.0 {
-                    bestlayerinfo = layerinfo;
-                    println!("new best {:?}", layer);
-                }
-                layers.push(layer);
-                layer = Vec::new();
-                layerinfo = (0,0,0);
-            }
-        }
+    let mut codes: HashMap<i64,i64> = HashMap::new();
+    let mut i = 0i64;
+    for v_str in contents.split(',') {
+        codes.insert(i,v_str.trim().parse().unwrap());
+        i+=1;
     }
 
-    println!("best is {:?} val  {}", bestlayerinfo, bestlayerinfo.1 * bestlayerinfo.2);
+    codes
 }
 
-fn day_8_b() {
-    let filename = "data/d8.txt";
+fn day_9_run(inputs: &Vec<i64>, codes: &mut HashMap<i64,i64>, i: &mut i64) -> (i64, bool) {
+    let instr_size = {
+        let mut v = vec![4i64;100];
+        v[3] = 2;
+        v[4] = 2;
+        v[5] = 3;
+        v[6] = 3;
+        v[9] = 2;
+        v[99] = 1;
+        v };
 
-    let contents = fs::read_to_string(filename).unwrap();
+    let mut input_idx = 0;
+    let mut output = inputs[inputs.len() - 1];
 
-    let mut layers = Vec::new();
-    let mut finallayer = vec![2; 25*6];
-    let mut layer = Vec::new();
-    for c in contents.chars() {
-        if c.is_digit(10) {
-            let d = c.to_digit(10).unwrap();
-            if finallayer[layer.len()] == 2 { finallayer[layer.len()] = d; }
-            layer.push(d);
+    let mut rel = 0i64;
 
-            if layer.len() == (25 * 6) {
-                layers.push(layer);
-                layer = Vec::new();
+    while codes.contains_key(i) {
+        let instr = codes[i];
+        let opcode = instr % 100;
+        let mut params = Vec::new();
+        let mut div = 100;
+
+        for j in 1..instr_size[opcode as usize] {
+            params.push(
+                match (instr / div) % 10 {
+                    0 => codes[&(*i+j)],
+                    1 => *i+j,
+                    _ => codes[&(*i+j)]+rel,
+                });
+            div = div * 10;
+        }
+
+        println!("instr {} is opcode {} with params {:?}", instr, opcode, params);
+        //println!("vals are {} {} {}", codes[p0], codes[p1], codes[p2] );
+        match opcode as usize {
+            1 => {
+                let p0 = codes[&params[0]];
+                let p1 = codes[&params[1]];
+                let o = codes.entry(params[2]).or_insert(0);
+                *o = p0+p1;
+                *i += 4;
+            },
+            2 => {
+                let p0 = codes[&params[0]];
+                let p1 = codes[&params[1]];
+                let o = codes.entry(params[2]).or_insert(0);
+                *o = p0*p1;
+                *i += 4;
+            },
+            3 => {
+                // put input at addr params[0];
+                let o = codes.entry(params[0]).or_insert(0);
+                *o = if inputs.len() > input_idx {inputs[input_idx]} else { output };
+                input_idx += 1;
+                *i += 2;
+            },
+            4 => {
+                // output at params[0]
+                //output = codes[params[0]];
+                *i += 2;
+                return (codes[&params[0]], false)
+            },
+            5 => {
+                // jump if true
+                if codes[&params[0]] != 0 {
+                    *i = codes[&params[1]];
+                }
+                else {
+                    *i += 3;
+                }
+            }
+            6 => {
+                // jump if false
+                if codes[&params[0]] == 0 {
+                    *i = codes[&params[1]];
+                }
+                else {
+                    *i += 3;
+                }
+            },
+            7 => {
+                // less than
+                // 
+                if codes[&params[0]] < codes[&params[1]] {
+                    let o = codes.entry(params[2]).or_insert(0);
+                    *o = 1;
+                }
+                else {
+                    let o = codes.entry(params[2]).or_insert(0);
+                    *o = 0;
+                }
+                *i += 4;
+            },
+            8 => {
+                // equal
+                if codes[&params[0]] == codes[&params[1]] {
+                    let o = codes.entry(params[2]).or_insert(0);
+                    *o = 1;
+                }
+                else {
+                    let o = codes.entry(params[2]).or_insert(0);
+                    *o = 0;
+                }
+                *i += 4;
+            },
+            9 => {
+                rel += codes[&params[0]];
+                *i += 2;
+            },
+            99 => {
+                *i = -1;
+            },
+            _ => {
+                panic!("bad opcode!");
             }
         }
     }
 
-    for i in 0..6 {
-        println!("{:?}", finallayer.get((i*25+0)..(i*25+25)));
-    }
+    return (output,true);
+}
+
+fn day_9() {
+    let mut codes = day_9_load_codes();
+
+    let mut ip = 0i64;
+
+    println!("{}", day_9_run(&vec![2],&mut codes,&mut ip).0);
 }
 
 fn main() {
-    day_8_b();
+    day_9();
 }
