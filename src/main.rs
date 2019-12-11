@@ -827,150 +827,412 @@ use std::collections::HashMap;
 // }
 
 
-fn day_9_load_codes() -> HashMap<i64,i64> {
-    let filename = "data/d9.txt";
+// fn day_9_load_codes() -> HashMap<i64,i64> {
+//     let filename = "data/d9.txt";
 
-    let contents = fs::read_to_string(filename).unwrap();
+//     let contents = fs::read_to_string(filename).unwrap();
 
-    let mut codes: HashMap<i64,i64> = HashMap::new();
-    let mut i = 0i64;
-    for v_str in contents.split(',') {
-        codes.insert(i,v_str.trim().parse().unwrap());
-        i+=1;
-    }
+//     let mut codes: HashMap<i64,i64> = HashMap::new();
+//     let mut i = 0i64;
+//     for v_str in contents.split(',') {
+//         codes.insert(i,v_str.trim().parse().unwrap());
+//         i+=1;
+//     }
 
-    codes
+//     codes
+// }
+
+// fn day_9_run(inputs: &Vec<i64>, codes: &mut HashMap<i64,i64>, i: &mut i64) -> (i64, bool) {
+//     let instr_size = {
+//         let mut v = vec![4i64;100];
+//         v[3] = 2;
+//         v[4] = 2;
+//         v[5] = 3;
+//         v[6] = 3;
+//         v[9] = 2;
+//         v[99] = 1;
+//         v };
+
+//     let mut input_idx = 0;
+//     let mut output = inputs[inputs.len() - 1];
+
+//     let mut rel = 0i64;
+
+//     while codes.contains_key(i) {
+//         let instr = codes[i];
+//         let opcode = instr % 100;
+//         let mut params = Vec::new();
+//         let mut div = 100;
+
+//         for j in 1..instr_size[opcode as usize] {
+//             params.push(
+//                 match (instr / div) % 10 {
+//                     0 => codes[&(*i+j)],
+//                     1 => *i+j,
+//                     _ => codes[&(*i+j)]+rel,
+//                 });
+//             div = div * 10;
+//         }
+
+//         //println!("instr {} is opcode {} with params {:?}", instr, opcode, params);
+//         //println!("vals are {} {} {}", codes[p0], codes[p1], codes[p2] );
+//         match opcode as usize {
+//             1 => {
+//                 let p0 = codes[&params[0]];
+//                 let p1 = codes[&params[1]];
+//                 let o = codes.entry(params[2]).or_insert(0);
+//                 *o = p0+p1;
+//                 *i += 4;
+//             },
+//             2 => {
+//                 let p0 = codes[&params[0]];
+//                 let p1 = codes[&params[1]];
+//                 let o = codes.entry(params[2]).or_insert(0);
+//                 *o = p0*p1;
+//                 *i += 4;
+//             },
+//             3 => {
+//                 // put input at addr params[0];
+//                 let o = codes.entry(params[0]).or_insert(0);
+//                 *o = if inputs.len() > input_idx {inputs[input_idx]} else { output };
+//                 input_idx += 1;
+//                 *i += 2;
+//             },
+//             4 => {
+//                 // output at params[0]
+//                 //output = codes[params[0]];
+//                 *i += 2;
+//                 return (codes[&params[0]], false)
+//             },
+//             5 => {
+//                 // jump if true
+//                 if codes[&params[0]] != 0 {
+//                     *i = codes[&params[1]];
+//                 }
+//                 else {
+//                     *i += 3;
+//                 }
+//             }
+//             6 => {
+//                 // jump if false
+//                 if codes[&params[0]] == 0 {
+//                     *i = codes[&params[1]];
+//                 }
+//                 else {
+//                     *i += 3;
+//                 }
+//             },
+//             7 => {
+//                 // less than
+//                 // 
+//                 if codes[&params[0]] < codes[&params[1]] {
+//                     let o = codes.entry(params[2]).or_insert(0);
+//                     *o = 1;
+//                 }
+//                 else {
+//                     let o = codes.entry(params[2]).or_insert(0);
+//                     *o = 0;
+//                 }
+//                 *i += 4;
+//             },
+//             8 => {
+//                 // equal
+//                 if codes[&params[0]] == codes[&params[1]] {
+//                     let o = codes.entry(params[2]).or_insert(0);
+//                     *o = 1;
+//                 }
+//                 else {
+//                     let o = codes.entry(params[2]).or_insert(0);
+//                     *o = 0;
+//                 }
+//                 *i += 4;
+//             },
+//             9 => {
+//                 rel += codes[&params[0]];
+//                 *i += 2;
+//             },
+//             99 => {
+//                 *i = -1;
+//             },
+//             _ => {
+//                 panic!("bad opcode!");
+//             }
+//         }
+//     }
+
+//     return (output,true);
+// }
+
+// fn day_9() {
+//     let mut codes = day_9_load_codes();
+
+//     let mut ip = 0i64;
+
+//     println!("{}", day_9_run(&vec![2],&mut codes,&mut ip).0);
+// }
+#[derive(Debug)]
+enum SpaceState {
+    Empty,
+    Asteroid
 }
 
-fn day_9_run(inputs: &Vec<i64>, codes: &mut HashMap<i64,i64>, i: &mut i64) -> (i64, bool) {
-    let instr_size = {
-        let mut v = vec![4i64;100];
-        v[3] = 2;
-        v[4] = 2;
-        v[5] = 3;
-        v[6] = 3;
-        v[9] = 2;
-        v[99] = 1;
-        v };
 
-    let mut input_idx = 0;
-    let mut output = inputs[inputs.len() - 1];
+fn day_10_a() {
+    let mut space = {
+        let filename = "data/d10_test.txt";
+        println!("In file {}", filename);
+    
+        let contents = fs::read_to_string(filename)
+        .expect("Something went wrong reading the file");
 
-    let mut rel = 0i64;
-
-    while codes.contains_key(i) {
-        let instr = codes[i];
-        let opcode = instr % 100;
-        let mut params = Vec::new();
-        let mut div = 100;
-
-        for j in 1..instr_size[opcode as usize] {
-            params.push(
-                match (instr / div) % 10 {
-                    0 => codes[&(*i+j)],
-                    1 => *i+j,
-                    _ => codes[&(*i+j)]+rel,
-                });
-            div = div * 10;
+        let mut v = Vec::new();
+        for v_str in contents.split_ascii_whitespace() {
+            println!("{}", v_str);
+            let mut w = Vec::new();
+            for c in v_str.chars() {
+                w.push( 
+                    match c {
+                        '#' => {SpaceState::Asteroid},
+                        _ => {SpaceState::Empty}
+                    }
+                );
+            }
+            v.push(w);
         }
+        v
+    };
 
-        println!("instr {} is opcode {} with params {:?}", instr, opcode, params);
-        //println!("vals are {} {} {}", codes[p0], codes[p1], codes[p2] );
-        match opcode as usize {
-            1 => {
-                let p0 = codes[&params[0]];
-                let p1 = codes[&params[1]];
-                let o = codes.entry(params[2]).or_insert(0);
-                *o = p0+p1;
-                *i += 4;
-            },
-            2 => {
-                let p0 = codes[&params[0]];
-                let p1 = codes[&params[1]];
-                let o = codes.entry(params[2]).or_insert(0);
-                *o = p0*p1;
-                *i += 4;
-            },
-            3 => {
-                // put input at addr params[0];
-                let o = codes.entry(params[0]).or_insert(0);
-                *o = if inputs.len() > input_idx {inputs[input_idx]} else { output };
-                input_idx += 1;
-                *i += 2;
-            },
-            4 => {
-                // output at params[0]
-                //output = codes[params[0]];
-                *i += 2;
-                return (codes[&params[0]], false)
-            },
-            5 => {
-                // jump if true
-                if codes[&params[0]] != 0 {
-                    *i = codes[&params[1]];
+    //println!("{:?}", space);
+
+
+    let h = space.len();
+    let w = space[0].len();
+
+    let mut space_counts = vec![vec![0;w];h];
+
+    println!("h: {} w: {}", h, w);
+
+    let paths = {
+        let mut paths = Vec::new();
+        let mut visitedmask = vec![vec![false; w]; h];
+
+        for i in 1..(h as i32) {
+            for j in (i+1)..(w as i32) {
+                let mut path0 = Vec::new();
+                let mut path1 = Vec::new();
+                let mut path2 = Vec::new();
+                let mut path3 = Vec::new();
+                let mut loci = i;
+                let mut locj = j;
+                while loci < h as i32 && locj < w as i32 && visitedmask[loci as usize][locj as usize] == false {
+                    path0.push((-loci, locj));
+                    path1.push((-loci, -locj));
+                    path2.push((-locj, loci));
+                    path3.push((-locj, -loci));
+                    visitedmask[loci as usize][locj as usize] = true;
+                    loci += i;
+                    locj += j;
                 }
-                else {
-                    *i += 3;
+                if path0.len() > 0 {
+                    paths.push(path0);
+                    paths.push(path1);
+                    paths.push(path2);
+                    paths.push(path3);
                 }
             }
-            6 => {
-                // jump if false
-                if codes[&params[0]] == 0 {
-                    *i = codes[&params[1]];
-                }
-                else {
-                    *i += 3;
-                }
-            },
-            7 => {
-                // less than
-                // 
-                if codes[&params[0]] < codes[&params[1]] {
-                    let o = codes.entry(params[2]).or_insert(0);
-                    *o = 1;
-                }
-                else {
-                    let o = codes.entry(params[2]).or_insert(0);
-                    *o = 0;
-                }
-                *i += 4;
-            },
-            8 => {
-                // equal
-                if codes[&params[0]] == codes[&params[1]] {
-                    let o = codes.entry(params[2]).or_insert(0);
-                    *o = 1;
-                }
-                else {
-                    let o = codes.entry(params[2]).or_insert(0);
-                    *o = 0;
-                }
-                *i += 4;
-            },
-            9 => {
-                rel += codes[&params[0]];
-                *i += 2;
-            },
-            99 => {
-                *i = -1;
-            },
-            _ => {
-                panic!("bad opcode!");
+        }
+
+        // special cases!
+        let mut path0 = Vec::new();
+        let mut path1 = Vec::new();
+        let mut path2 = Vec::new();
+        let mut path3 = Vec::new();
+        for k in 1..(h as i32) { // assuming h = w
+            path0.push((0,-k));
+            path1.push((-k,-k));
+            path2.push((-k,0));
+            path3.push((-k,k));
+        }
+        paths.push(path0);
+        paths.push(path1);
+        paths.push(path2);
+        paths.push(path3);
+
+        paths
+    };
+    println!("{:?}", paths);
+
+    for ph in 0..(space.len() as i32) {
+        let line = &space[ph as usize];
+        for pw in 0..(line.len() as i32) {
+            let point = &line[pw as usize];
+            match point {
+                SpaceState::Asteroid => {
+                    for path in &paths {
+                        //println!("checking path {:?} for {} {}", path, ph, pw);
+                        for p in path {
+                            let xh = ph + p.0;
+                            let xw = pw + p.1;
+                            if xh < 0 || xh >= h as i32 || xw < 0 || xw >= w as i32 {
+                                //println!("break neg/of {} {}", xh, xw);
+                                break;
+                            }
+        
+                            match space[xh as usize][xw as usize] {
+                                SpaceState::Asteroid => {
+                                    space_counts[xh as usize][xw as usize] += 1;
+                                    space_counts[ph as usize][pw as usize] += 1;
+                                    //println!("hit pair {} {} and {} {}", xh, xw, ph, pw);
+                                    break;
+                                },
+                                _ => {}
+                            }
+                        }
+                    }
+                },
+                _ => {}
+            }
+        }
+    }
+    println!("counts {:?}", space_counts);
+
+    let mut max = 0;
+    for iy in 0..space_counts.len() {
+        let y = &space_counts[iy];
+        for iz in 0..y.len() {
+            let z= y[iz];
+            if z > max {
+                max = z;
+                println!("new max! {} is {} {}", max, iy, iz);
             }
         }
     }
 
-    return (output,true);
+    println!("max {}", max);
 }
 
-fn day_9() {
-    let mut codes = day_9_load_codes();
+fn day_10_b() {
 
-    let mut ip = 0i64;
+    let mut space = {
+        let filename = "data/d10.txt";
+        println!("In file {}", filename);
+    
+        let contents = fs::read_to_string(filename)
+        .expect("Something went wrong reading the file");
 
-    println!("{}", day_9_run(&vec![2],&mut codes,&mut ip).0);
+        let mut v = Vec::new();
+        for v_str in contents.split_ascii_whitespace() {
+            println!("{}", v_str);
+            let mut w = Vec::new();
+            for c in v_str.chars() {
+                w.push( 
+                    match c {
+                        '#' => {SpaceState::Asteroid},
+                        _ => {SpaceState::Empty}
+                    }
+                );
+            }
+            v.push(w);
+        }
+        v
+    };
+
+    //println!("{:?}", space);
+    let h = space.len();
+    let w = space[0].len();
+
+    let mut space_counts = vec![vec![0;w];h];
+
+    println!("h: {} w: {}", h, w);
+
+    let paths = {
+        let mut paths = Vec::new();
+        let mut visitedmask = vec![vec![false; w]; h];
+
+        for i in 1..(h as i32) {
+            for j in (i+1)..(w as i32) {
+                let mut path0 = Vec::new();
+                let mut path1 = Vec::new();
+                let mut loci = i;
+                let mut locj = j;
+                while loci < h as i32 && locj < w as i32 && visitedmask[loci as usize][locj as usize] == false {
+                    path0.push((-loci, locj));
+                    path1.push((-locj, loci));
+                    visitedmask[loci as usize][locj as usize] = true;
+                    loci += i;
+                    locj += j;
+                }
+                if path0.len() > 0 {
+                    paths.push(path0);
+                    paths.push(path1);
+                }
+            }
+        }
+        // special cases!
+        let mut path0 = Vec::new();
+        let mut path1 = Vec::new();
+        for k in 1..(h as i32) { // assuming h = w
+            path0.push((-k,-k));
+            path1.push((-k,0));
+        }
+        paths.push(path0);
+        paths.push(path1);
+
+        // now sort it
+        paths.sort_unstable_by(|p0, p1| {
+            let v0 = p0[0];
+            let v1 = p1[0];
+            let dv0 = v0.0 as f64 / ((v0.0*v0.0+v0.1*v0.1) as f64).sqrt().abs();
+            let dv1 = v1.0 as f64 / ((v1.0*v1.0+v1.1*v1.1) as f64).sqrt().abs();
+            dv0.partial_cmp(&dv1).unwrap()
+        });
+
+        paths
+    };
+    for p in &paths {
+        println!("{:?}", p[0]);
+    }
+    //println!("{:?}", paths);
+    // 
+    let bh = 29;
+    let bw = 26;
+
+    let mut num_zapped = 0;
+    while num_zapped <= 200 {
+        for q in 0..4 {
+            for path in &paths {
+                //println!("checking path {:?} for {} {}", path, ph, pw);
+                for p in path {
+                    let sp = match q {
+                        0 => {(bh + p.0, bw + p.1)},
+                        1 => {(bh + p.1, bw - p.0)},
+                        2 => {(bh - p.0, bw - p.1)},
+                        _ => {(bh - p.1, bw + p.0)}
+                    };
+
+                    let xh = sp.0;
+                    let xw = sp.1;
+                    if xh < 0 || xh >= h as i32 || xw < 0 || xw >= w as i32 {
+                        //println!("break neg/of {} {}", xh, xw);
+                        break;
+                    }
+                    let st = &space[xh as usize][xw as usize];
+                    match st {
+                        SpaceState::Asteroid => {
+                            space[xh as usize][xw as usize] = SpaceState::Empty;
+                            num_zapped += 1;
+                            println!("zapped asteroid {} at {} {}", num_zapped, xh, xw);
+                            break;
+                        },
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+    // zapped asteroid 200 at 19 14
 }
 
 fn main() {
-    day_9();
+    day_10_b();
 }
