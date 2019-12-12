@@ -1,5 +1,8 @@
 use std::fs;
 use std::collections::HashMap;
+use std::collections::HashSet;
+use std::str::FromStr;
+use std::num::ParseIntError;
 
 // fn day_1() {
 //     let filename = "data/d1.txt";
@@ -826,6 +829,26 @@ use std::collections::HashMap;
 //     }
 // }
 
+
+// fn day_9_improved(mode: i64) {
+//     let mut codes = load_intcodes("data/d9.txt");
+
+//     let mut ip = 0i64;
+
+//     // awkward way to capture a state because i can't figure out how to do a Fn and FnMut that reference the same state
+//     let d9_inout = |has_output, output| -> i64 {
+//         if has_output {
+//             println!("output: {}", output);
+//         }
+//         else {
+//             return mode;
+//         }
+//         0
+//     };
+
+//     println!("running {}", run_intcodes(d9_inout, &mut codes,&mut ip));
+// }
+
 // 
 // 
 // #[derive(Debug)]
@@ -1349,26 +1372,172 @@ fn day_11() {
     }
 }
 
-fn day_9_improved(mode: i64) {
-    let mut codes = load_intcodes("data/d9.txt");
-
-    let mut ip = 0i64;
-
-    // awkward way to capture a state because i can't figure out how to do a Fn and FnMut that reference the same state
-    let d9_inout = |has_output, output| -> i64 {
-        if has_output {
-            println!("output: {}", output);
-        }
-        else {
-            return mode;
-        }
-        0
-    };
-
-    println!("running {}", run_intcodes(d9_inout, &mut codes,&mut ip));
+#[derive(Debug, Clone, Copy, Hash)]
+struct Vector3 {
+    x: i16,
+    y: i16,
+    z: i16
 }
 
+impl PartialEq for Vector3 {
+    fn eq(&self, other: &Self) -> bool {
+        self.x == other.x && self.y == other.y && self.z == other.z
+    }
+}
+
+impl Eq for Vector3 { }
+
+impl FromStr for Vector3 {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let coords: Vec<&str> = s.trim_matches(|p| p == '<' || p == '>' )
+                                 .split(',')
+                                 .collect();
+
+        println!("parsing {:?}", coords);
+        let x_fromstr = coords[0].trim().split_at(2).1.parse::<i16>()?;
+        let y_fromstr = coords[1].trim().split_at(2).1.parse::<i16>()?;
+        let z_fromstr = coords[2].trim().split_at(2).1.parse::<i16>()?;
+
+        Ok(Vector3 { x: x_fromstr, y: y_fromstr, z: z_fromstr })
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, Eq)]
+struct Moon {
+    pos: Vector3,
+    vel: Vector3
+}
+
+impl PartialEq for Moon {
+    fn eq(&self, other: &Self) -> bool {
+        self.pos == other.pos && self.vel == other.vel
+    }
+}
+
+fn day_12() {
+    let mut moons = Vec::new();
+    let filename = "data/d12.txt";
+
+    let contents = fs::read_to_string(filename)
+    .expect("Something went wrong reading the file");
+
+    //let mut v = Vec::new();
+    for v_str in contents.lines() {
+        moons.push(Moon {pos: v_str.parse().unwrap(), vel: Vector3{x:0,y:0,z:0}});
+    }
+
+    for moon in &moons {
+        println!("{:?}", moon);
+    }
+    let snap = moons.clone();
+
+    let checkgrav = |a, b| {if a < b {-1} else if a > b {1} else {0}};
+
+    let mut period = (0i64, 0i64, 0i64);
+
+    for t in 0..std::i64::MAX {
+        for i in 0..moons.len() {
+            for j in i..moons.len() {
+                if i != j {
+                    let mi = &moons[i];
+                    let mj = &moons[j];
+                    let grav = Vector3{
+                        x: checkgrav(mj.pos.x, mi.pos.x),
+                        y: checkgrav(mj.pos.y, mi.pos.y),
+                        z: checkgrav(mj.pos.z, mi.pos.z)
+                    };
+
+                    {
+                        let mut mi = &mut moons[i];
+                        mi.vel.x += grav.x;
+                        mi.vel.y += grav.y;
+                        mi.vel.z += grav.z;
+                    }
+                    {
+                        let mut mj = &mut moons[j];
+                        mj.vel.x -= grav.x;
+                        mj.vel.y -= grav.y;
+                        mj.vel.z -= grav.z;
+                    }
+                }
+            }
+        }
+
+        for mut moon in &mut moons {
+            moon.pos.x += moon.vel.x;
+            moon.pos.y += moon.vel.y;
+            moon.pos.z += moon.vel.z;
+        }
+
+
+        let is_x_eq = |s_v: &Vec<Moon>, m_v: &Vec<Moon>| {
+            for i in 0..s_v.len() {
+                if s_v[i].pos.x != m_v[i].pos.x ||
+                   s_v[i].vel.x != m_v[i].vel.x {
+                       return false;
+                   }
+            }
+            return true;
+        };
+
+        let is_y_eq = |s_v: &Vec<Moon>, m_v: &Vec<Moon>| {
+            for i in 0..s_v.len() {
+                if s_v[i].pos.y != m_v[i].pos.y ||
+                   s_v[i].vel.y != m_v[i].vel.y {
+                       return false;
+                   }
+            }
+            return true;
+        };
+
+        let is_z_eq = |s_v: &Vec<Moon>, m_v: &Vec<Moon>| {
+            for i in 0..s_v.len() {
+                if s_v[i].pos.z != m_v[i].pos.z ||
+                   s_v[i].vel.z != m_v[i].vel.z {
+                       return false;
+                   }
+            }
+            return true;
+        };
+        if period.0 == 0 && is_x_eq(&snap, &moons) {
+            println!("holy shit! X after {}", t+1);
+            period.0 = t+1;
+        }
+
+        if period.1 == 0 && is_y_eq(&snap, &moons) {
+            println!("holy shit! Y after {}", t+1);
+            period.1 = t+1;
+        }
+
+        if period.2 == 0 && is_z_eq(&snap, &moons) {
+            println!("holy shit! Z after {}", t+1);
+            period.2 = t+1;
+        }
+
+        if period.0 != 0 && period.1 != 0 && period.2 != 0 {
+            println!("all three! {:?}", period);
+            // final solution:  i typed this into wolfram alpha to get the least common multiple of those.
+            break;
+        }
+        //snaps.insert(moons.clone());
+
+        if t % 1000000 == 0 {
+            println!("step {}", t);
+            // let mut energy = 0i64;
+            for moon in &moons {
+                println!("{:?}", moon);
+                // let pot = moon.pos.x.abs() + moon.pos.y.abs() + moon.pos.z.abs();
+                // let kin = moon.vel.x.abs() + moon.vel.y.abs() + moon.vel.z.abs();
+                // println!("pot: {} kin: {}", pot, kin);
+                // energy += pot as i64  * kin as i64;
+            }
+            // println!("energy: {}", energy);
+        }
+    }
+}
 
 fn main() {
-    day_11();
+    day_12();
 }
