@@ -1,8 +1,10 @@
 use std::fs;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::str::FromStr;
 use std::num::ParseIntError;
+use std::cmp;
+
+extern crate bit_vec;
 
 // fn day_1() {
 //     let filename = "data/d1.txt";
@@ -1270,107 +1272,107 @@ fn run_intcodes<F: FnMut(bool, i64) -> i64>(mut inout: F, codes: &mut HashMap<i6
     return true;
 }
 
-#[derive(Debug)]
-enum RobotDir {
-    Up,
-    Left,
-    Right,
-    Down
-}
+// #[derive(Debug)]
+// enum RobotDir {
+//     Up,
+//     Left,
+//     Right,
+//     Down
+// }
 
-#[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
-struct PanelCoord {
-    x: i64,
-    y: i64
-}
+// #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
+// struct PanelCoord {
+//     x: i64,
+//     y: i64
+// }
 
-enum RobotOutputStage {
-    Paint,
-    Move
-}
+// enum RobotOutputStage {
+//     Paint,
+//     Move
+// }
 
 
-fn day_11() {
-    let mut codes = load_intcodes("data/d11.txt");
+// fn day_11() {
+//     let mut codes = load_intcodes("data/d11.txt");
 
-    let mut ip = 0i64;
+//     let mut ip = 0i64;
 
-    let mut rob_dir = RobotDir::Up;
-    let mut rob_coords = PanelCoord { x: 0i64, y: 0i64 };
+//     let mut rob_dir = RobotDir::Up;
+//     let mut rob_coords = PanelCoord { x: 0i64, y: 0i64 };
 
-    let mut panel_info = HashMap::new();
-    panel_info.insert(PanelCoord{x:0,y:0},1);
+//     let mut panel_info = HashMap::new();
+//     panel_info.insert(PanelCoord{x:0,y:0},1);
 
-    let mut num_painted = 0;
-    let mut output_stage = RobotOutputStage::Paint;
+//     let mut num_painted = 0;
+//     let mut output_stage = RobotOutputStage::Paint;
 
-    // awkward way to capture a state because i can't figure out how to do a Fn and FnMut that reference the same state
-    let d11_inout = |has_output, output| -> i64 {
-        if has_output {
-            match output_stage {
-                RobotOutputStage::Paint => {
-                    if panel_info.contains_key(&rob_coords) {
-                        panel_info.entry(rob_coords).and_modify(|p| *p = output);
-                    } else {
-                        panel_info.insert(rob_coords, output);
-                        num_painted += 1;
-                        println!("num painted inc to {}", num_painted);
-                    }
-                    output_stage = RobotOutputStage::Move;
-                    println!("got output {} for coords {:?}", output, &rob_coords);
-                },
-                _ => { //move
-                    rob_dir = match (&rob_dir, output) {
-                        (RobotDir::Up, 1) | (RobotDir::Down, 0) => { rob_coords.x += 1; RobotDir::Right },
-                        (RobotDir::Up, 0) | (RobotDir::Down, 1) => { rob_coords.x -= 1; RobotDir::Left},
-                        (RobotDir::Left, 1) | (RobotDir::Right, 0) => { rob_coords.y += 1; RobotDir::Up},
-                        (RobotDir::Left, 0) | (RobotDir::Right, 1) => { rob_coords.y -= 1; RobotDir::Down},
-                        _ => {
-                            println!("Bad direction");
-                            RobotDir::Up
-                        }
-                    };
-                    println!("turned robot to {:?} and moved to {:?}", rob_dir, rob_coords);
-                    output_stage = RobotOutputStage::Paint;
-                }
-            }
-        }
-        else {
-            let input_color = if panel_info.contains_key(&rob_coords) {
-                panel_info[&rob_coords]
-            } else { 0i64 };
-            println!("returning input {} from {:?}", input_color, &rob_coords);
-            return input_color;
-        }
-        0
-    };
+//     // awkward way to capture a state because i can't figure out how to do a Fn and FnMut that reference the same state
+//     let d11_inout = |has_output, output| -> i64 {
+//         if has_output {
+//             match output_stage {
+//                 RobotOutputStage::Paint => {
+//                     if panel_info.contains_key(&rob_coords) {
+//                         panel_info.entry(rob_coords).and_modify(|p| *p = output);
+//                     } else {
+//                         panel_info.insert(rob_coords, output);
+//                         num_painted += 1;
+//                         println!("num painted inc to {}", num_painted);
+//                     }
+//                     output_stage = RobotOutputStage::Move;
+//                     println!("got output {} for coords {:?}", output, &rob_coords);
+//                 },
+//                 _ => { //move
+//                     rob_dir = match (&rob_dir, output) {
+//                         (RobotDir::Up, 1) | (RobotDir::Down, 0) => { rob_coords.x += 1; RobotDir::Right },
+//                         (RobotDir::Up, 0) | (RobotDir::Down, 1) => { rob_coords.x -= 1; RobotDir::Left},
+//                         (RobotDir::Left, 1) | (RobotDir::Right, 0) => { rob_coords.y += 1; RobotDir::Up},
+//                         (RobotDir::Left, 0) | (RobotDir::Right, 1) => { rob_coords.y -= 1; RobotDir::Down},
+//                         _ => {
+//                             println!("Bad direction");
+//                             RobotDir::Up
+//                         }
+//                     };
+//                     println!("turned robot to {:?} and moved to {:?}", rob_dir, rob_coords);
+//                     output_stage = RobotOutputStage::Paint;
+//                 }
+//             }
+//         }
+//         else {
+//             let input_color = if panel_info.contains_key(&rob_coords) {
+//                 panel_info[&rob_coords]
+//             } else { 0i64 };
+//             println!("returning input {} from {:?}", input_color, &rob_coords);
+//             return input_color;
+//         }
+//         0
+//     };
 
-    println!("running {}", run_intcodes(d11_inout, &mut codes,&mut ip));
+//     println!("running {}", run_intcodes(d11_inout, &mut codes,&mut ip));
 
-    println!("num painted {}", num_painted);
+//     println!("num painted {}", num_painted);
 
-    // hashmap to bitmap!
-    let mut w = 0;
-    let mut h = 0;
-    for p in &panel_info {
-        if p.0.x > w { w = p.0.x; }
-        if (-1*p.0.y) > h { h = -1*p.0.y; };
-    }
+//     // hashmap to bitmap!
+//     let mut w = 0;
+//     let mut h = 0;
+//     for p in &panel_info {
+//         if p.0.x > w { w = p.0.x; }
+//         if (-1*p.0.y) > h { h = -1*p.0.y; };
+//     }
 
-    println!("h {} w {}", h, w);
+//     println!("h {} w {}", h, w);
 
-    for i in 0..=h {
-        for j in 0..=w {
-            let key = PanelCoord{x:j,y:(-1*i)};
-            let mut v = " ";
-            if panel_info.contains_key(&key) { if panel_info[&key] == 1i64 { v = "#"; } } 
-            else { v = "?"; }
+//     for i in 0..=h {
+//         for j in 0..=w {
+//             let key = PanelCoord{x:j,y:(-1*i)};
+//             let mut v = " ";
+//             if panel_info.contains_key(&key) { if panel_info[&key] == 1i64 { v = "#"; } } 
+//             else { v = "?"; }
 
-            print!("{}", v);
-        }
-        print!("\n");
-    }
-}
+//             print!("{}", v);
+//         }
+//         print!("\n");
+//     }
+// }
 
 #[derive(Debug, Clone, Copy, Hash)]
 struct Vector3 {
@@ -1536,6 +1538,89 @@ fn day_12() {
             // println!("energy: {}", energy);
         }
     }
+    let prime_max = (cmp::max(cmp::max(period.0, period.1),period.2) as f64).sqrt() as usize + 1usize;
+
+    println!("p max {}", prime_max);
+    let mut primes = bit_vec::BitVec::from_elem(prime_max,true);
+
+    for i in 2..prime_max {
+        if primes.get(i).unwrap() {
+            for j in 2..prime_max/i {
+                primes.set(i*j, false);
+            }
+        }
+    }
+
+    print!("primes ");
+    for i in 0..prime_max {
+        if primes.get(i).unwrap() {
+            print!("{} ", i);
+        }
+    }
+    print!("\n");
+
+    let get_factors = |a| {
+        let mut i = 2usize;
+        let mut rem = a;
+        let mut factors = HashMap::new();
+        while i < prime_max {
+            if primes.get(i).unwrap() {
+                if rem % i == 0 {
+                    let f = factors.entry(i).or_insert(0);
+                    *f += 1;
+                    rem = rem / i;
+                } else {
+                    i+=1;
+                }
+
+                if rem < prime_max && primes.get(rem).unwrap() {
+                    break;
+                }
+            } else { i+= 1; }
+        }
+        if rem > 1 {
+            let f = factors.entry(rem).or_insert(0);
+            *f += 1;
+        }
+        println!("factors: {:?}", factors);
+        factors
+    };
+
+    let f_x = get_factors(period.0 as usize);
+    let f_y =  get_factors(period.1 as usize);
+    let f_z = get_factors(period.2 as usize);
+
+    let merge_hashmaps = |a: HashMap<usize,i32>, b: HashMap<usize,i32>| {
+        let mut c = HashMap::new();
+        for k_a in a.keys() {
+            let v_a = a[k_a];
+            let v_b = if b.contains_key(k_a) {b[k_a]} else {0};
+            c.insert(*k_a,cmp::max(v_a,v_b));
+        }
+
+        // not the most efficient but whatev
+        for k_b in b.keys() {
+            let v_b = b[k_b];
+            let v_a = if a.contains_key(k_b) {a[k_b]} else {0};
+            c.insert(*k_b,cmp::max(v_a,v_b));
+        }
+
+        c
+    };
+
+    let merged = merge_hashmaps(f_x, merge_hashmaps(f_y, f_z));
+    println!("merged: {:?}", merged);
+
+    let lcm = {
+        let mut v = 1i64;
+        for k in merged {
+            for i in 0..k.1 {
+                v *= k.0 as i64;
+            }
+        }
+        v
+    };
+    println!("lcm is {}", lcm);
 }
 
 fn main() {
