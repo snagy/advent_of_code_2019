@@ -1130,6 +1130,21 @@ fn load_intcodes(filename: &str) -> HashMap<i64,i64> {
     codes
 }
 
+// #[derive(Debug, Clone)]
+// enum ParamType {
+//     In,
+//     Out
+// }
+
+// #[derive(Debug,Clone)]
+// struct Instr {
+//     name: String,
+//     opcode: i64,
+//     width: i64,
+//     params: Vec<ParamType>
+// }
+
+
 fn run_intcodes<F: FnMut(bool, i64) -> i64>(mut inout: F, codes: &mut HashMap<i64,i64>, i: &mut i64) -> bool {
     let instr_size = {
         let mut v = vec![4i64;100];
@@ -1140,6 +1155,15 @@ fn run_intcodes<F: FnMut(bool, i64) -> i64>(mut inout: F, codes: &mut HashMap<i6
         v[9] = 2;
         v[99] = 1;
         v };
+
+    // let instr_set = {
+    //     let mut set = HashMap::new();
+    //     set.insert(1i64, Instr{ name: "add".to_string(), opcode: 1, width: 4,
+    //             params: vec![ParamType::In,ParamType::In,ParamType::Out]});
+    //     set.insert(2i64, Instr{ name: "add".to_string(), opcode: 2, width: 4,
+    //             params: vec![ParamType::In,ParamType::In,ParamType::Out]});
+    //     set
+    // };
 
     let mut rel = 0i64;
 
@@ -1158,7 +1182,7 @@ fn run_intcodes<F: FnMut(bool, i64) -> i64>(mut inout: F, codes: &mut HashMap<i6
     while codes.contains_key(i) {
         let instr = codes[i];
         let opcode = instr % 100;
-        let mut params = Vec::new();
+        let mut params = Vec::with_capacity(3);
         let mut div = 100;
 
         for j in 1..instr_size[opcode as usize] {
@@ -1272,357 +1296,461 @@ fn run_intcodes<F: FnMut(bool, i64) -> i64>(mut inout: F, codes: &mut HashMap<i6
     return true;
 }
 
-// #[derive(Debug)]
-// enum RobotDir {
-//     Up,
-//     Left,
-//     Right,
-//     Down
+#[derive(Debug)]
+enum RobotDir {
+    Up,
+    Left,
+    Right,
+    Down
+}
+
+#[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
+struct PanelCoord {
+    x: i64,
+    y: i64
+}
+
+enum RobotOutputStage {
+    Paint,
+    Move
+}
+
+
+fn day_11() {
+    let mut codes = load_intcodes("data/d11.txt");
+
+    let mut ip = 0i64;
+
+    let mut rob_dir = RobotDir::Up;
+    let mut rob_coords = PanelCoord { x: 0i64, y: 0i64 };
+
+    let mut panel_info = HashMap::new();
+    panel_info.insert(PanelCoord{x:0,y:0},1);
+
+    let mut num_painted = 0;
+    let mut output_stage = RobotOutputStage::Paint;
+
+    // awkward way to capture a state because i can't figure out how to do a Fn and FnMut that reference the same state
+    let d11_inout = |has_output, output| -> i64 {
+        if has_output {
+            match output_stage {
+                RobotOutputStage::Paint => {
+                    if panel_info.contains_key(&rob_coords) {
+                        panel_info.entry(rob_coords).and_modify(|p| *p = output);
+                    } else {
+                        panel_info.insert(rob_coords, output);
+                        num_painted += 1;
+                        //println!("num painted inc to {}", num_painted);
+                    }
+                    output_stage = RobotOutputStage::Move;
+                    //println!("got output {} for coords {:?}", output, &rob_coords);
+                },
+                _ => { //move
+                    rob_dir = match (&rob_dir, output) {
+                        (RobotDir::Up, 1) | (RobotDir::Down, 0) => { rob_coords.x += 1; RobotDir::Right },
+                        (RobotDir::Up, 0) | (RobotDir::Down, 1) => { rob_coords.x -= 1; RobotDir::Left},
+                        (RobotDir::Left, 1) | (RobotDir::Right, 0) => { rob_coords.y += 1; RobotDir::Up},
+                        (RobotDir::Left, 0) | (RobotDir::Right, 1) => { rob_coords.y -= 1; RobotDir::Down},
+                        _ => {
+                            println!("Bad direction");
+                            RobotDir::Up
+                        }
+                    };
+                    //println!("turned robot to {:?} and moved to {:?}", rob_dir, rob_coords);
+                    output_stage = RobotOutputStage::Paint;
+                }
+            }
+        }
+        else {
+            let input_color = if panel_info.contains_key(&rob_coords) {
+                panel_info[&rob_coords]
+            } else { 0i64 };
+            //println!("returning input {} from {:?}", input_color, &rob_coords);
+            return input_color;
+        }
+        0
+    };
+
+    println!("running {}", run_intcodes(d11_inout, &mut codes,&mut ip));
+
+    println!("num painted {}", num_painted);
+
+    // hashmap to bitmap!
+    let mut w = 0;
+    let mut h = 0;
+    for p in &panel_info {
+        if p.0.x > w { w = p.0.x; }
+        if (-1*p.0.y) > h { h = -1*p.0.y; };
+    }
+
+    println!("h {} w {}", h, w);
+
+    for i in 0..=h {
+        for j in 0..=w {
+            let key = PanelCoord{x:j,y:(-1*i)};
+            let mut v = " ";
+            if panel_info.contains_key(&key) { if panel_info[&key] == 1i64 { v = "#"; } } 
+            else { v = "?"; }
+
+            print!("{}", v);
+        }
+        print!("\n");
+    }
+}
+
+// #[derive(Debug, Clone, Copy, Hash)]
+// struct Vector3 {
+//     x: i16,
+//     y: i16,
+//     z: i16
 // }
 
-// #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
-// struct PanelCoord {
-//     x: i64,
-//     y: i64
+// impl PartialEq for Vector3 {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.x == other.x && self.y == other.y && self.z == other.z
+//     }
 // }
 
-// enum RobotOutputStage {
-//     Paint,
-//     Move
+// impl Eq for Vector3 { }
+
+// impl FromStr for Vector3 {
+//     type Err = ParseIntError;
+
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         let coords: Vec<&str> = s.trim_matches(|p| p == '<' || p == '>' )
+//                                  .split(',')
+//                                  .collect();
+
+//         println!("parsing {:?}", coords);
+//         let x_fromstr = coords[0].trim().split_at(2).1.parse::<i16>()?;
+//         let y_fromstr = coords[1].trim().split_at(2).1.parse::<i16>()?;
+//         let z_fromstr = coords[2].trim().split_at(2).1.parse::<i16>()?;
+
+//         Ok(Vector3 { x: x_fromstr, y: y_fromstr, z: z_fromstr })
+//     }
 // }
 
+// #[derive(Debug, Clone, Copy, Hash, Eq)]
+// struct Moon {
+//     pos: Vector3,
+//     vel: Vector3
+// }
 
-// fn day_11() {
-//     let mut codes = load_intcodes("data/d11.txt");
+// impl PartialEq for Moon {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.pos == other.pos && self.vel == other.vel
+//     }
+// }
 
-//     let mut ip = 0i64;
+// fn day_12() {
+//     let mut moons = Vec::new();
+//     let filename = "data/d12.txt";
 
-//     let mut rob_dir = RobotDir::Up;
-//     let mut rob_coords = PanelCoord { x: 0i64, y: 0i64 };
+//     let contents = fs::read_to_string(filename)
+//     .expect("Something went wrong reading the file");
 
-//     let mut panel_info = HashMap::new();
-//     panel_info.insert(PanelCoord{x:0,y:0},1);
+//     //let mut v = Vec::new();
+//     for v_str in contents.lines() {
+//         moons.push(Moon {pos: v_str.parse().unwrap(), vel: Vector3{x:0,y:0,z:0}});
+//     }
 
-//     let mut num_painted = 0;
-//     let mut output_stage = RobotOutputStage::Paint;
+//     for moon in &moons {
+//         println!("{:?}", moon);
+//     }
+//     let snap = moons.clone();
 
-//     // awkward way to capture a state because i can't figure out how to do a Fn and FnMut that reference the same state
-//     let d11_inout = |has_output, output| -> i64 {
-//         if has_output {
-//             match output_stage {
-//                 RobotOutputStage::Paint => {
-//                     if panel_info.contains_key(&rob_coords) {
-//                         panel_info.entry(rob_coords).and_modify(|p| *p = output);
-//                     } else {
-//                         panel_info.insert(rob_coords, output);
-//                         num_painted += 1;
-//                         println!("num painted inc to {}", num_painted);
-//                     }
-//                     output_stage = RobotOutputStage::Move;
-//                     println!("got output {} for coords {:?}", output, &rob_coords);
-//                 },
-//                 _ => { //move
-//                     rob_dir = match (&rob_dir, output) {
-//                         (RobotDir::Up, 1) | (RobotDir::Down, 0) => { rob_coords.x += 1; RobotDir::Right },
-//                         (RobotDir::Up, 0) | (RobotDir::Down, 1) => { rob_coords.x -= 1; RobotDir::Left},
-//                         (RobotDir::Left, 1) | (RobotDir::Right, 0) => { rob_coords.y += 1; RobotDir::Up},
-//                         (RobotDir::Left, 0) | (RobotDir::Right, 1) => { rob_coords.y -= 1; RobotDir::Down},
-//                         _ => {
-//                             println!("Bad direction");
-//                             RobotDir::Up
-//                         }
+//     let checkgrav = |a, b| {if a < b {-1} else if a > b {1} else {0}};
+
+//     let mut period = (0i64, 0i64, 0i64);
+
+//     for t in 0..std::i64::MAX {
+//         for i in 0..moons.len() {
+//             for j in i..moons.len() {
+//                 if i != j {
+//                     let mi = &moons[i];
+//                     let mj = &moons[j];
+//                     let grav = Vector3{
+//                         x: checkgrav(mj.pos.x, mi.pos.x),
+//                         y: checkgrav(mj.pos.y, mi.pos.y),
+//                         z: checkgrav(mj.pos.z, mi.pos.z)
 //                     };
-//                     println!("turned robot to {:?} and moved to {:?}", rob_dir, rob_coords);
-//                     output_stage = RobotOutputStage::Paint;
+
+//                     {
+//                         let mut mi = &mut moons[i];
+//                         mi.vel.x += grav.x;
+//                         mi.vel.y += grav.y;
+//                         mi.vel.z += grav.z;
+//                     }
+//                     {
+//                         let mut mj = &mut moons[j];
+//                         mj.vel.x -= grav.x;
+//                         mj.vel.y -= grav.y;
+//                         mj.vel.z -= grav.z;
+//                     }
 //                 }
 //             }
 //         }
-//         else {
-//             let input_color = if panel_info.contains_key(&rob_coords) {
-//                 panel_info[&rob_coords]
-//             } else { 0i64 };
-//             println!("returning input {} from {:?}", input_color, &rob_coords);
-//             return input_color;
+
+//         for mut moon in &mut moons {
+//             moon.pos.x += moon.vel.x;
+//             moon.pos.y += moon.vel.y;
+//             moon.pos.z += moon.vel.z;
 //         }
-//         0
+
+
+//         let is_x_eq = |s_v: &Vec<Moon>, m_v: &Vec<Moon>| {
+//             for i in 0..s_v.len() {
+//                 if s_v[i].pos.x != m_v[i].pos.x ||
+//                    s_v[i].vel.x != m_v[i].vel.x {
+//                        return false;
+//                    }
+//             }
+//             return true;
+//         };
+
+//         let is_y_eq = |s_v: &Vec<Moon>, m_v: &Vec<Moon>| {
+//             for i in 0..s_v.len() {
+//                 if s_v[i].pos.y != m_v[i].pos.y ||
+//                    s_v[i].vel.y != m_v[i].vel.y {
+//                        return false;
+//                    }
+//             }
+//             return true;
+//         };
+
+//         let is_z_eq = |s_v: &Vec<Moon>, m_v: &Vec<Moon>| {
+//             for i in 0..s_v.len() {
+//                 if s_v[i].pos.z != m_v[i].pos.z ||
+//                    s_v[i].vel.z != m_v[i].vel.z {
+//                        return false;
+//                    }
+//             }
+//             return true;
+//         };
+//         if period.0 == 0 && is_x_eq(&snap, &moons) {
+//             println!("holy shit! X after {}", t+1);
+//             period.0 = t+1;
+//         }
+
+//         if period.1 == 0 && is_y_eq(&snap, &moons) {
+//             println!("holy shit! Y after {}", t+1);
+//             period.1 = t+1;
+//         }
+
+//         if period.2 == 0 && is_z_eq(&snap, &moons) {
+//             println!("holy shit! Z after {}", t+1);
+//             period.2 = t+1;
+//         }
+
+//         if period.0 != 0 && period.1 != 0 && period.2 != 0 {
+//             println!("all three! {:?}", period);
+//             // final solution:  i typed this into wolfram alpha to get the least common multiple of those.
+//             break;
+//         }
+//         //snaps.insert(moons.clone());
+
+//         if t % 1000000 == 0 {
+//             println!("step {}", t);
+//             // let mut energy = 0i64;
+//             for moon in &moons {
+//                 println!("{:?}", moon);
+//                 // let pot = moon.pos.x.abs() + moon.pos.y.abs() + moon.pos.z.abs();
+//                 // let kin = moon.vel.x.abs() + moon.vel.y.abs() + moon.vel.z.abs();
+//                 // println!("pot: {} kin: {}", pot, kin);
+//                 // energy += pot as i64  * kin as i64;
+//             }
+//             // println!("energy: {}", energy);
+//         }
+//     }
+//     let prime_max = (cmp::max(cmp::max(period.0, period.1),period.2) as f64).sqrt() as usize + 1usize;
+
+//     println!("p max {}", prime_max);
+//     let mut primes = bit_vec::BitVec::from_elem(prime_max,true);
+
+//     for i in 2..prime_max {
+//         if primes.get(i).unwrap() {
+//             for j in 2..prime_max/i {
+//                 primes.set(i*j, false);
+//             }
+//         }
+//     }
+
+//     print!("primes ");
+//     for i in 0..prime_max {
+//         if primes.get(i).unwrap() {
+//             print!("{} ", i);
+//         }
+//     }
+//     print!("\n");
+
+//     let get_factors = |a| {
+//         let mut i = 2usize;
+//         let mut rem = a;
+//         let mut factors = HashMap::new();
+//         while i < prime_max {
+//             if primes.get(i).unwrap() {
+//                 if rem % i == 0 {
+//                     let f = factors.entry(i).or_insert(0);
+//                     *f += 1;
+//                     rem = rem / i;
+//                 } else {
+//                     i+=1;
+//                 }
+
+//                 if rem < prime_max && primes.get(rem).unwrap() {
+//                     break;
+//                 }
+//             } else { i+= 1; }
+//         }
+//         if rem > 1 {
+//             let f = factors.entry(rem).or_insert(0);
+//             *f += 1;
+//         }
+//         println!("factors: {:?}", factors);
+//         factors
 //     };
 
-//     println!("running {}", run_intcodes(d11_inout, &mut codes,&mut ip));
+//     let f_x = get_factors(period.0 as usize);
+//     let f_y =  get_factors(period.1 as usize);
+//     let f_z = get_factors(period.2 as usize);
 
-//     println!("num painted {}", num_painted);
-
-//     // hashmap to bitmap!
-//     let mut w = 0;
-//     let mut h = 0;
-//     for p in &panel_info {
-//         if p.0.x > w { w = p.0.x; }
-//         if (-1*p.0.y) > h { h = -1*p.0.y; };
-//     }
-
-//     println!("h {} w {}", h, w);
-
-//     for i in 0..=h {
-//         for j in 0..=w {
-//             let key = PanelCoord{x:j,y:(-1*i)};
-//             let mut v = " ";
-//             if panel_info.contains_key(&key) { if panel_info[&key] == 1i64 { v = "#"; } } 
-//             else { v = "?"; }
-
-//             print!("{}", v);
+//     let merge_hashmaps = |a: HashMap<usize,i32>, b: HashMap<usize,i32>| {
+//         let mut c = HashMap::new();
+//         for k_a in a.keys() {
+//             let v_a = a[k_a];
+//             let v_b = if b.contains_key(k_a) {b[k_a]} else {0};
+//             c.insert(*k_a,cmp::max(v_a,v_b));
 //         }
-//         print!("\n");
-//     }
+
+//         // not the most efficient but whatev
+//         for k_b in b.keys() {
+//             let v_b = b[k_b];
+//             let v_a = if a.contains_key(k_b) {a[k_b]} else {0};
+//             c.insert(*k_b,cmp::max(v_a,v_b));
+//         }
+
+//         c
+//     };
+
+//     let merged = merge_hashmaps(f_x, merge_hashmaps(f_y, f_z));
+//     println!("merged: {:?}", merged);
+
+//     let lcm = {
+//         let mut v = 1i64;
+//         for k in merged {
+//             for i in 0..k.1 {
+//                 v *= k.0 as i64;
+//             }
+//         }
+//         v
+//     };
+//     println!("lcm is {}", lcm);
 // }
 
 #[derive(Debug, Clone, Copy, Hash)]
-struct Vector3 {
-    x: i16,
-    y: i16,
-    z: i16
+struct Vector2 {
+    x: i64,
+    y: i64
 }
-
-impl PartialEq for Vector3 {
+impl PartialEq for Vector2 {
     fn eq(&self, other: &Self) -> bool {
-        self.x == other.x && self.y == other.y && self.z == other.z
+        self.x == other.x && self.y == other.y
     }
 }
 
-impl Eq for Vector3 { }
+impl Eq for Vector2 { }
 
-impl FromStr for Vector3 {
-    type Err = ParseIntError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let coords: Vec<&str> = s.trim_matches(|p| p == '<' || p == '>' )
-                                 .split(',')
-                                 .collect();
-
-        println!("parsing {:?}", coords);
-        let x_fromstr = coords[0].trim().split_at(2).1.parse::<i16>()?;
-        let y_fromstr = coords[1].trim().split_at(2).1.parse::<i16>()?;
-        let z_fromstr = coords[2].trim().split_at(2).1.parse::<i16>()?;
-
-        Ok(Vector3 { x: x_fromstr, y: y_fromstr, z: z_fromstr })
-    }
+enum Tile {
+    Empty,
+    Wall,
+    Block,
+    HorizontalPaddle,
+    Ball
 }
 
-#[derive(Debug, Clone, Copy, Hash, Eq)]
-struct Moon {
-    pos: Vector3,
-    vel: Vector3
-}
+fn day_13() {
+    let mut codes = load_intcodes("data/d13.txt");
 
-impl PartialEq for Moon {
-    fn eq(&self, other: &Self) -> bool {
-        self.pos == other.pos && self.vel == other.vel
-    }
-}
+    codes.insert(0, 2i64);
 
-fn day_12() {
-    let mut moons = Vec::new();
-    let filename = "data/d12.txt";
+    let mut ip = 0i64;
 
-    let contents = fs::read_to_string(filename)
-    .expect("Something went wrong reading the file");
+    let mut output_idx = 0i64;
 
-    //let mut v = Vec::new();
-    for v_str in contents.lines() {
-        moons.push(Moon {pos: v_str.parse().unwrap(), vel: Vector3{x:0,y:0,z:0}});
-    }
-
-    for moon in &moons {
-        println!("{:?}", moon);
-    }
-    let snap = moons.clone();
-
-    let checkgrav = |a, b| {if a < b {-1} else if a > b {1} else {0}};
-
-    let mut period = (0i64, 0i64, 0i64);
-
-    for t in 0..std::i64::MAX {
-        for i in 0..moons.len() {
-            for j in i..moons.len() {
-                if i != j {
-                    let mi = &moons[i];
-                    let mj = &moons[j];
-                    let grav = Vector3{
-                        x: checkgrav(mj.pos.x, mi.pos.x),
-                        y: checkgrav(mj.pos.y, mi.pos.y),
-                        z: checkgrav(mj.pos.z, mi.pos.z)
-                    };
-
-                    {
-                        let mut mi = &mut moons[i];
-                        mi.vel.x += grav.x;
-                        mi.vel.y += grav.y;
-                        mi.vel.z += grav.z;
+    let mut wall = HashMap::new();
+    let mut last_pos = Vector2{x:0,y:0};
+    let mut score = 0i64;
+    let mut ball_pos = Vector2{x:0,y:0};
+    let mut paddle_pos = Vector2{x:0,y:0};
+    // awkward way to capture a state because i can't figure out how to do a Fn and FnMut that reference the same state
+    let d13_inout = |has_output, output| -> i64 {
+        if has_output {
+            match output_idx % 3 {
+                0 => last_pos.x = output,
+                1 => last_pos.y = output,
+                _ => {
+                    //println!("got tile {} at {:?}", output, last_pos);
+                    let score_ind = Vector2{x:-1, y:0};
+                    if last_pos == score_ind {
+                        score = output;
+                        println!("score: {}", score);
                     }
-                    {
-                        let mut mj = &mut moons[j];
-                        mj.vel.x -= grav.x;
-                        mj.vel.y -= grav.y;
-                        mj.vel.z -= grav.z;
+                    else {
+                        wall.insert(last_pos,output);
+                        match output {
+                            3 => paddle_pos = last_pos,
+                            4 => ball_pos = last_pos,
+                            _ => {}
+                        }
                     }
                 }
             }
+
+            output_idx += 1;
         }
-
-        for mut moon in &mut moons {
-            moon.pos.x += moon.vel.x;
-            moon.pos.y += moon.vel.y;
-            moon.pos.z += moon.vel.z;
-        }
-
-
-        let is_x_eq = |s_v: &Vec<Moon>, m_v: &Vec<Moon>| {
-            for i in 0..s_v.len() {
-                if s_v[i].pos.x != m_v[i].pos.x ||
-                   s_v[i].vel.x != m_v[i].vel.x {
-                       return false;
-                   }
+        else {
+            if ball_pos.x < paddle_pos.x {
+                return -1i64;
             }
-            return true;
-        };
-
-        let is_y_eq = |s_v: &Vec<Moon>, m_v: &Vec<Moon>| {
-            for i in 0..s_v.len() {
-                if s_v[i].pos.y != m_v[i].pos.y ||
-                   s_v[i].vel.y != m_v[i].vel.y {
-                       return false;
-                   }
+            else if ball_pos.x > paddle_pos.x {
+                return 1i64;
             }
-            return true;
-        };
-
-        let is_z_eq = |s_v: &Vec<Moon>, m_v: &Vec<Moon>| {
-            for i in 0..s_v.len() {
-                if s_v[i].pos.z != m_v[i].pos.z ||
-                   s_v[i].vel.z != m_v[i].vel.z {
-                       return false;
-                   }
-            }
-            return true;
-        };
-        if period.0 == 0 && is_x_eq(&snap, &moons) {
-            println!("holy shit! X after {}", t+1);
-            period.0 = t+1;
+            return 0i64;
         }
-
-        if period.1 == 0 && is_y_eq(&snap, &moons) {
-            println!("holy shit! Y after {}", t+1);
-            period.1 = t+1;
-        }
-
-        if period.2 == 0 && is_z_eq(&snap, &moons) {
-            println!("holy shit! Z after {}", t+1);
-            period.2 = t+1;
-        }
-
-        if period.0 != 0 && period.1 != 0 && period.2 != 0 {
-            println!("all three! {:?}", period);
-            // final solution:  i typed this into wolfram alpha to get the least common multiple of those.
-            break;
-        }
-        //snaps.insert(moons.clone());
-
-        if t % 1000000 == 0 {
-            println!("step {}", t);
-            // let mut energy = 0i64;
-            for moon in &moons {
-                println!("{:?}", moon);
-                // let pot = moon.pos.x.abs() + moon.pos.y.abs() + moon.pos.z.abs();
-                // let kin = moon.vel.x.abs() + moon.vel.y.abs() + moon.vel.z.abs();
-                // println!("pot: {} kin: {}", pot, kin);
-                // energy += pot as i64  * kin as i64;
-            }
-            // println!("energy: {}", energy);
-        }
-    }
-    let prime_max = (cmp::max(cmp::max(period.0, period.1),period.2) as f64).sqrt() as usize + 1usize;
-
-    println!("p max {}", prime_max);
-    let mut primes = bit_vec::BitVec::from_elem(prime_max,true);
-
-    for i in 2..prime_max {
-        if primes.get(i).unwrap() {
-            for j in 2..prime_max/i {
-                primes.set(i*j, false);
-            }
-        }
-    }
-
-    print!("primes ");
-    for i in 0..prime_max {
-        if primes.get(i).unwrap() {
-            print!("{} ", i);
-        }
-    }
-    print!("\n");
-
-    let get_factors = |a| {
-        let mut i = 2usize;
-        let mut rem = a;
-        let mut factors = HashMap::new();
-        while i < prime_max {
-            if primes.get(i).unwrap() {
-                if rem % i == 0 {
-                    let f = factors.entry(i).or_insert(0);
-                    *f += 1;
-                    rem = rem / i;
-                } else {
-                    i+=1;
-                }
-
-                if rem < prime_max && primes.get(rem).unwrap() {
-                    break;
-                }
-            } else { i+= 1; }
-        }
-        if rem > 1 {
-            let f = factors.entry(rem).or_insert(0);
-            *f += 1;
-        }
-        println!("factors: {:?}", factors);
-        factors
+        0
     };
 
-    let f_x = get_factors(period.0 as usize);
-    let f_y =  get_factors(period.1 as usize);
-    let f_z = get_factors(period.2 as usize);
+    println!("drawing {}", run_intcodes(d13_inout, &mut codes,&mut ip));
 
-    let merge_hashmaps = |a: HashMap<usize,i32>, b: HashMap<usize,i32>| {
-        let mut c = HashMap::new();
-        for k_a in a.keys() {
-            let v_a = a[k_a];
-            let v_b = if b.contains_key(k_a) {b[k_a]} else {0};
-            c.insert(*k_a,cmp::max(v_a,v_b));
+    let mut num_blocks = 0;
+    let mut max_x = 0;
+    let mut max_y = 0;
+    for p in &wall {
+        if *p.1 == 2 {
+            num_blocks += 1;
         }
+        max_x = cmp::max(p.0.x, max_x);
+        max_y = cmp::max(p.0.y, max_y);
+    }
 
-        // not the most efficient but whatev
-        for k_b in b.keys() {
-            let v_b = b[k_b];
-            let v_a = if a.contains_key(k_b) {a[k_b]} else {0};
-            c.insert(*k_b,cmp::max(v_a,v_b));
-        }
-
-        c
-    };
-
-    let merged = merge_hashmaps(f_x, merge_hashmaps(f_y, f_z));
-    println!("merged: {:?}", merged);
-
-    let lcm = {
-        let mut v = 1i64;
-        for k in merged {
-            for i in 0..k.1 {
-                v *= k.0 as i64;
+    for y in 0..=max_y {
+        for x in 0..=max_x {
+            match wall.get(&Vector2{x:x,y:y}) {
+                Some(p) => match p {
+                            0 => print!(" "),
+                            1 => print!("|"),
+                            2 => print!("#"),
+                            3 => print!("-"),
+                            4 => print!("o"),
+                            _ => print!("?") },
+                _ => print!("?") 
             }
         }
-        v
-    };
-    println!("lcm is {}", lcm);
+        print!("\n");
+    }
+
+    println!("num blocks {} dims {} {}", num_blocks, max_x, max_y);
 }
-
 fn main() {
-    day_12();
+    day_13();
 }
