@@ -1,3 +1,5 @@
+#[allow(unused_imports)]
+#[allow(dead_code)]
 use std::fs;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -1647,110 +1649,214 @@ fn day_11() {
 //     println!("lcm is {}", lcm);
 // }
 
-#[derive(Debug, Clone, Copy, Hash)]
-struct Vector2 {
-    x: i64,
-    y: i64
+// #[derive(Debug, Clone, Copy, Hash)]
+// struct Vector2 {
+//     x: i64,
+//     y: i64
+// }
+// impl PartialEq for Vector2 {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.x == other.x && self.y == other.y
+//     }
+// }
+
+// impl Eq for Vector2 { }
+
+// fn day_13() {
+//     let mut codes = load_intcodes("data/d13.txt");
+
+//     codes.insert(0, 2i64);
+
+//     let mut ip = 0i64;
+
+//     let mut output_idx = 0i64;
+
+//     let mut wall = HashMap::new();
+//     let mut last_pos = Vector2{x:0,y:0};
+//     let mut score = 0i64;
+//     let mut ball_pos = Vector2{x:0,y:0};
+//     let mut paddle_pos = Vector2{x:0,y:0};
+//     // awkward way to capture a state because i can't figure out how to do a Fn and FnMut that reference the same state
+//     let d13_inout = |has_output, output| -> i64 {
+//         if has_output {
+//             match output_idx % 3 {
+//                 0 => last_pos.x = output,
+//                 1 => last_pos.y = output,
+//                 _ => {
+//                     //println!("got tile {} at {:?}", output, last_pos);
+//                     let score_ind = Vector2{x:-1, y:0};
+//                     if last_pos == score_ind {
+//                         score = output;
+//                         println!("score: {}", score);
+//                     }
+//                     else {
+//                         wall.insert(last_pos,output);
+//                         match output {
+//                             3 => paddle_pos = last_pos,
+//                             4 => ball_pos = last_pos,
+//                             _ => {}
+//                         }
+//                     }
+//                 }
+//             }
+
+//             output_idx += 1;
+//         }
+//         else {
+//             if ball_pos.x < paddle_pos.x {
+//                 return -1i64;
+//             }
+//             else if ball_pos.x > paddle_pos.x {
+//                 return 1i64;
+//             }
+//             return 0i64;
+//         }
+//         0
+//     };
+
+//     println!("drawing {}", run_intcodes(d13_inout, &mut codes,&mut ip));
+
+//     let mut num_blocks = 0;
+//     let mut max_x = 0;
+//     let mut max_y = 0;
+//     for p in &wall {
+//         if *p.1 == 2 {
+//             num_blocks += 1;
+//         }
+//         max_x = cmp::max(p.0.x, max_x);
+//         max_y = cmp::max(p.0.y, max_y);
+//     }
+
+//     for y in 0..=max_y {
+//         for x in 0..=max_x {
+//             match wall.get(&Vector2{x:x,y:y}) {
+//                 Some(p) => match p {
+//                             0 => print!(" "),
+//                             1 => print!("|"),
+//                             2 => print!("#"),
+//                             3 => print!("-"),
+//                             4 => print!("o"),
+//                             _ => print!("?") },
+//                 _ => print!("?") 
+//             }
+//         }
+//         print!("\n");
+//     }
+
+//     println!("num blocks {} dims {} {}", num_blocks, max_x, max_y);
+// }
+
+#[derive(Debug, Clone)]
+struct ChemForm {
+    output_quantity: i64,
+    inputs: HashMap<String, i64>
 }
-impl PartialEq for Vector2 {
-    fn eq(&self, other: &Self) -> bool {
-        self.x == other.x && self.y == other.y
+
+fn day_14() {
+    let filename = "data/d14.txt";
+
+    let contents = fs::read_to_string(filename)
+    .expect("Something went wrong reading the file");
+
+    let mut chem_tree = HashMap::new();
+
+    //let mut v = Vec::new();
+    for line in contents.lines() {
+        let parts: Vec<&str> = line.split_terminator("=>").collect();
+
+        let mut form = ChemForm{output_quantity: 0, inputs: HashMap::new()};
+
+        for part in parts[0].split_terminator(",") {
+            let f: Vec<&str> = part.split_ascii_whitespace().collect();
+            form.inputs.insert(f[1].trim().to_string(),f[0].trim().parse().unwrap());
+        }
+
+        let o: Vec<&str> = parts[1].split_ascii_whitespace().collect();
+        form.output_quantity = o[0].trim().parse().unwrap();
+
+        // if chem_tree.contains_key(&o[1].trim()) {
+        //     panic!("oops");
+        // }
+        chem_tree.insert(o[1].trim().to_string(), form);
     }
-}
 
-impl Eq for Vector2 { }
+    let mut needs = HashMap::new();
 
-enum Tile {
-    Empty,
-    Wall,
-    Block,
-    HorizontalPaddle,
-    Ball
-}
+    needs.insert("FUEL".to_string(), 1);
 
-fn day_13() {
-    let mut codes = load_intcodes("data/d13.txt");
 
-    codes.insert(0, 2i64);
+    let mut rems = HashMap::new();
+    let mut ore = 1000000000000i64;
+    let mut fuel_tot = 0i64;
 
-    let mut ip = 0i64;
-
-    let mut output_idx = 0i64;
-
-    let mut wall = HashMap::new();
-    let mut last_pos = Vector2{x:0,y:0};
-    let mut score = 0i64;
-    let mut ball_pos = Vector2{x:0,y:0};
-    let mut paddle_pos = Vector2{x:0,y:0};
-    // awkward way to capture a state because i can't figure out how to do a Fn and FnMut that reference the same state
-    let d13_inout = |has_output, output| -> i64 {
-        if has_output {
-            match output_idx % 3 {
-                0 => last_pos.x = output,
-                1 => last_pos.y = output,
-                _ => {
-                    //println!("got tile {} at {:?}", output, last_pos);
-                    let score_ind = Vector2{x:-1, y:0};
-                    if last_pos == score_ind {
-                        score = output;
-                        println!("score: {}", score);
-                    }
-                    else {
-                        wall.insert(last_pos,output);
-                        match output {
-                            3 => paddle_pos = last_pos,
-                            4 => ball_pos = last_pos,
-                            _ => {}
+    while ore > 0i64 {
+        let mut ore_tot = 0i64;
+        while !needs.is_empty() {
+            needs = {
+                let mut new_needs = HashMap::new();
+                for o in needs {
+                    let c = chem_tree.get(&o.0).unwrap();
+        
+    
+                    let o_need =  {
+                        let rem = rems.entry(o.0.to_string()).or_insert(0i64);
+                        if *rem > o.1 {
+                            // println!("taking {} from rem {}", o.1, *rem);
+                            *rem -= o.1;
+                            0
+                        }
+                        else {
+                            // if *rem > 0 {
+                            //     println!("taking {} from rem",*rem);
+                            // }
+                            let r = *rem;
+                            *rem = 0;
+                            o.1 - r
+                        }
+                    };
+    
+                    if o_need > 0 {
+                        let num = (o_need - 1i64) / c.output_quantity + 1i64;
+                        //println!("{} need {} to get {} (get {})", o.0, c.output_quantity, o_need, num*c.output_quantity);
+            
+                        for n in &c.inputs {
+                            if n.0 == "ORE" {
+                                ore_tot += n.1 * num;
+                            }
+                            else {
+                                let x = new_needs.entry(n.0.to_string()).or_insert(0i64);
+                                *x += n.1 * num;
+                            }
+                        }
+        
+                        if num*c.output_quantity > o_need {
+                            let rem = rems.entry(o.0.to_string()).or_insert(0i64);
+                            *rem += num*c.output_quantity - o_need;
+                            // println!("adding {} to rem of {}", num*c.output_quantity - o_need, o.0);    
                         }
                     }
                 }
+                //println!("{:?}", new_needs);
+                new_needs
             }
+        }
+        if ore > ore_tot {
+            ore -= ore_tot;
+            ore_tot = 0;
+            fuel_tot += 1;
 
-            output_idx += 1;
+            //println!("ore: {}", ore);
+            needs.insert("FUEL".to_string(), 1);
         }
         else {
-            if ball_pos.x < paddle_pos.x {
-                return -1i64;
-            }
-            else if ball_pos.x > paddle_pos.x {
-                return 1i64;
-            }
-            return 0i64;
+            break;
         }
-        0
-    };
-
-    println!("drawing {}", run_intcodes(d13_inout, &mut codes,&mut ip));
-
-    let mut num_blocks = 0;
-    let mut max_x = 0;
-    let mut max_y = 0;
-    for p in &wall {
-        if *p.1 == 2 {
-            num_blocks += 1;
-        }
-        max_x = cmp::max(p.0.x, max_x);
-        max_y = cmp::max(p.0.y, max_y);
     }
 
-    for y in 0..=max_y {
-        for x in 0..=max_x {
-            match wall.get(&Vector2{x:x,y:y}) {
-                Some(p) => match p {
-                            0 => print!(" "),
-                            1 => print!("|"),
-                            2 => print!("#"),
-                            3 => print!("-"),
-                            4 => print!("o"),
-                            _ => print!("?") },
-                _ => print!("?") 
-            }
-        }
-        print!("\n");
-    }
 
-    println!("num blocks {} dims {} {}", num_blocks, max_x, max_y);
+    println!("fuel: {}", fuel_tot);
 }
+
 fn main() {
-    day_13();
+    day_14();
 }
