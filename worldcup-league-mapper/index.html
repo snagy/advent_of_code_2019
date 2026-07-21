@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Cup ↔ League Mapper</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#/">World Cup ↔ League Mapper</a>
+    <div class="search-wrap">
+      <input id="search-input" type="search" placeholder="Search player, club, or country…" autocomplete="off">
+      <div id="search-results" class="search-results hidden"></div>
+    </div>
+  </header>
+
+  <main id="app"></main>
+
+  <footer class="site-footer">
+    <span id="data-note"></span>
+  </footer>
+
+  <script src="data/league-groups.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
